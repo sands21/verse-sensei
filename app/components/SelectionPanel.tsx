@@ -22,6 +22,10 @@ export default function SelectionPanel() {
         value={characterId}
         onChange={setCharacterId}
       />
+      <div className="text-sm text-gray-300/80">
+        <span className="mr-4">Universe: {universeId || "—"}</span>
+        <span>Character: {characterId || "—"}</span>
+      </div>
     </div>
   );
 }
