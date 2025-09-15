@@ -109,7 +109,10 @@ export default function LandingPage() {
                 href={`/chat?universe=${encodeURIComponent(u.name)}`}
                 className="group relative min-w-[250px] max-w-[320px] snap-start overflow-visible rounded-xl p-5 transition-transform duration-300 hover:scale-[1.02]"
                 style={{
-                  background: themedBackground(u.slug, u.glow),
+                  backgroundImage: themedBackground(u.slug, u.glow),
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  backgroundRepeat: "no-repeat",
                   boxShadow: `0 10px 30px rgba(0,0,0,0.25), 0 0 24px ${hexToRgba(
                     u.glow,
                     0.22
@@ -240,11 +243,12 @@ export default function LandingPage() {
               <div
                 className="pointer-events-none absolute inset-0 opacity-60 blur-xl"
                 style={{
-                  background: radialGradient(
+                  backgroundImage: radialGradient(
                     `#${(((i + 2) * 123456) % 0xffffff)
                       .toString(16)
                       .padStart(6, "0")}`
                   ),
+                  backgroundRepeat: "no-repeat",
                 }}
               />
               <div className="relative z-10 text-3xl text-muted">?</div>
@@ -384,7 +388,10 @@ function FeaturedCharacterCard() {
     <div
       className="relative overflow-hidden rounded-xl p-6 md:p-8"
       style={{
-        background: themedBackground(c.universeSlug, c.glow),
+        backgroundImage: themedBackground(c.universeSlug, c.glow),
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
         boxShadow: `0 20px 50px rgba(0,0,0,0.35), 0 0 40px ${hexToRgba(
           c.glow,
           0.25
@@ -393,7 +400,10 @@ function FeaturedCharacterCard() {
     >
       <div
         className="pointer-events-none absolute -inset-10 opacity-70 blur-2xl"
-        style={{ background: radialGradient(c.glow) }}
+        style={{
+          backgroundImage: radialGradient(c.glow),
+          backgroundRepeat: "no-repeat",
+        }}
       />
       <div className="relative z-10">
         <div className="text-xs uppercase tracking-wide text-muted">
