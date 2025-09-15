@@ -27,7 +27,7 @@ export default function ChatInput({ onSend }: Props) {
   return (
     <form onSubmit={submit} className="w-full flex gap-2">
       <input
-        className="flex-1 h-11 rounded-md bg-[#23272F] text-white border border-white/15 px-3 outline-none focus:ring-2 focus:ring-white/20"
+        className="flex-1 h-11 rounded-md bg-[#23272F] text-white border border-white/15 px-3 outline-none focus:ring-2 focus:ring-white/20 transition-shadow duration-200 focus:shadow-[0_0_0_3px_rgba(255,255,255,0.08)]"
         placeholder="Type your message..."
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -35,7 +35,7 @@ export default function ChatInput({ onSend }: Props) {
       />
       <button
         type="submit"
-        className="h-11 px-4 rounded-md bg-white/10 text-white hover:bg:white/15 disabled:opacity-60"
+        className="h-11 px-4 rounded-md bg-white/10 text-white hover:bg-white/15 active:scale-95 transition-transform duration-150 disabled:opacity-60"
         disabled={sending || !text.trim()}
       >
         Send

@@ -1,21 +1,33 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #181a20;
+  --foreground: #f5f6fa;
+  --muted: #a9adc1;
+  --panel: #23272f;
+  --border: #2e3440;
+  --accent: #ff7a45; /* default accent, can theme per universe later */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-panel: var(--panel);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #181a20;
+    --foreground: #f5f6fa;
+    --muted: #a9adc1;
+    --panel: #23272f;
+    --border: #2e3440;
+    --accent: #ff7a45;
   }
 }
 
@@ -23,4 +35,202 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Panels and inputs */
+.input,
+input {
+  background-color: var(--panel);
+  border-color: color-mix(in oklab, var(--foreground) 15%, transparent);
+  color: var(--foreground);
+}
+
+.button,
+button {
+  background-color: color-mix(in oklab, var(--foreground) 10%, transparent);
+  color: var(--foreground);
+}
+
+.border-default {
+  border-color: color-mix(in oklab, var(--foreground) 15%, transparent);
+}
+
+.text-muted {
+  color: var(--muted);
+}
+
+/* Chat bubble polish */
+.bubble-user {
+  background-color: color-mix(in oklab, var(--foreground) 10%, transparent);
+}
+.bubble-ai {
+  background-color: color-mix(in oklab, black 20%, var(--panel));
+}
+
+/* Landing animated gradient */
+.animated-gradient {
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 122, 69, 0.15),
+    rgba(99, 102, 241, 0.12),
+    rgba(16, 185, 129, 0.12),
+    rgba(255, 122, 69, 0.15)
+  );
+  animation: spin-slow 18s linear infinite;
+  filter: blur(60px);
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Modern minimal landing helpers */
+.gradient-text {
+  background: linear-gradient(90deg, #ff7a45, #a78bfa, #22d3ee);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.glass-card {
+  background: color-mix(in oklab, var(--panel) 85%, transparent);
+  border: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(6px);
+}
+
+.hover-lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-2px) scale(1.01);
+}
+
+.btn {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  translate: -120% 0;
+  width: 140%;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.18) 20%,
+    transparent 40%
+  );
+  transition: translate 0.6s ease;
+}
+.btn:hover::after {
+  translate: -10% 0;
+}
+
+/* Floating decorative orbs */
+.orb {
+  background: radial-gradient(
+      circle at 30% 30%,
+      rgba(255, 122, 69, 0.25),
+      transparent 60%
+    ),
+    radial-gradient(
+      circle at 70% 70%,
+      rgba(99, 102, 241, 0.18),
+      transparent 60%
+    );
+  filter: blur(10px);
+  border-radius: 9999px;
+  animation: float 8s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s both;
+}
+.fade-in-up.delay-1 {
+  animation-delay: 0.08s;
+}
+.fade-in-up.delay-2 {
+  animation-delay: 0.16s;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Subtle grid background */
+.grid-overlay {
+  background-image: linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+  mask-image: radial-gradient(ellipse at center, black, transparent 70%);
+}
+
+/* Hide scrollbars for aesthetic carousels */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Fading icon cycle for footer */
+.fade-cycle {
+  animation: fadeCycle 6s ease-in-out infinite;
+  opacity: 0.4;
+}
+.fade-cycle.delay-1 {
+  animation-delay: 0.6s;
+}
+.fade-cycle.delay-2 {
+  animation-delay: 1.2s;
+}
+.fade-cycle.delay-3 {
+  animation-delay: 1.8s;
+}
+.fade-cycle.delay-4 {
+  animation-delay: 2.4s;
+}
+.fade-cycle.delay-5 {
+  animation-delay: 3s;
+}
+
+@keyframes fadeCycle {
+  0%,
+  100% {
+    opacity: 0.25;
+    filter: blur(0px);
+  }
+  50% {
+    opacity: 0.9;
+    filter: blur(0.2px);
+  }
 }

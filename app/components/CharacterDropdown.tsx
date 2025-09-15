@@ -33,7 +33,7 @@ export default function CharacterDropdown({
       if (!universeId) return;
       setLoading(true);
       const { data, error } = await supabase
-        .from("characters")
+        .from("characters_public")
         .select("id, name")
         .eq("universe_id", universeId)
         .order("name", { ascending: true });
