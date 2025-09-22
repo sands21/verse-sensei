@@ -1,8 +1,130 @@
 "use client";
 import Link from "next/link";
-import { useRef } from "react";
+import * as React from "react";
 import HeroCollage from "./HeroCollage";
 import HeroMotion from "./HeroMotion";
+import UniverseMap from "./UniverseMap";
+
+type Lore = { tagline: string; lore: string[] };
+
+const LORE_BY_SLUG: Record<string, Lore> = {
+  naruto: {
+    tagline: "Ninja bonds, chakra, and unbreakable will.",
+    lore: [
+      "The spiral leaf symbol represents Konoha's will of fire.",
+      "Torii gates often mark sacred training grounds.",
+    ],
+  },
+  "one-piece": {
+    tagline: "Set sail for freedom across the Grand Line.",
+    lore: [
+      "Log Pose compasses point to islands with magnetic fields.",
+      "Dawn Island's sunsets inspired the Straw Hat flag colors.",
+    ],
+  },
+  "attack-on-titan": {
+    tagline: "Humanity fights for sky beyond the walls.",
+    lore: [
+      "ODM gear came from ancient blueprints found in a cellar.",
+      "The Walls are named for mythic guardians of old.",
+    ],
+  },
+  "dragon-ball": {
+    tagline: "Train hard, surpass limits, protect your world.",
+    lore: [
+      "Four-star ball is Goku's keepsake from Grandpa Gohan.",
+      "Ki signatures ripple like auroras in high gravity.",
+    ],
+  },
+  "jujutsu-kaisen": {
+    tagline: "Curses feed on fear; insight turns fear to strength.",
+    lore: [
+      "Shrines near torii are said to dampen cursed whispers.",
+      "Purple flares mark peak domain expansions.",
+    ],
+  },
+  "demon-slayer": {
+    tagline: "Breath, blade, and unwavering resolve.",
+    lore: [
+      "Nichirin blades shift hue in sunlight.",
+      "Wisteria blooms ward demons near mountain paths.",
+    ],
+  },
+};
+
+function LorePanelAndMap({ universes }: { universes: typeof UNIVERSES }) {
+  const [hovered, setHovered] = React.useState<string>("");
+  const [displayedSlug, setDisplayedSlug] = React.useState<string>("");
+  const [phase, setPhase] = React.useState<"idle" | "out">("idle");
+
+  React.useEffect(() => {
+    setPhase("out");
+    const t = window.setTimeout(() => {
+      setDisplayedSlug(hovered);
+      setPhase("idle");
+    }, 160);
+    return () => window.clearTimeout(t);
+  }, [hovered]);
+
+  const active: Lore | undefined = displayedSlug
+    ? LORE_BY_SLUG[displayedSlug as keyof typeof LORE_BY_SLUG]
+    : undefined;
+  const glow = universes.find((u) => u.slug === displayedSlug)?.glow;
+  const title = displayedSlug
+    ? universes.find((u) => u.slug === displayedSlug)?.name ?? ""
+    : "A living galaxy of worlds";
+  const tagline = displayedSlug
+    ? active?.tagline || "Explore this world."
+    : "Hover the portals to feel their energy. Click and drag the universes to your liking :)";
+  const items =
+    displayedSlug && active
+      ? active.lore
+      : [
+          "Each universe has its own unique characters and stories",
+          "Immerse yourself in authentic conversations",
+          "From ninjas to pirates to supernatural warriors",
+        ];
+
+  return (
+    <div
+      className="grid gap-6 md:grid-cols-[minmax(220px,1fr)_minmax(0,1.6fr)] items-stretch"
+      style={{
+        // @ts-expect-error CSS var passthrough
+        "--map-section-h": "380px",
+      }}
+    >
+      <div
+        className="glass-card rounded-xl p-6 md:p-7 h-full hidden md:block"
+        style={{
+          boxShadow: glow ? `0 10px 30px ${hexToRgba(glow, 0.22)}` : undefined,
+          borderColor: glow ? hexToRgba(glow, 0.25) : undefined,
+        }}
+      >
+        <div
+          style={{
+            transition: "opacity 200ms ease, transform 200ms ease",
+            opacity: phase === "out" ? 0 : 1,
+            transform: phase === "out" ? "translateY(6px)" : "none",
+          }}
+        >
+          <h3 className="text-xl font-semibold mb-2">{title}</h3>
+          <p className="text-sm text-muted">{tagline}</p>
+          <ul className="mt-4 space-y-2 text-sm text-muted">
+            {items.map((t, i) => (
+              <li key={`${displayedSlug || "default"}-${i}`}>• {t}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      <div className="relative overflow-visible">
+        <UniverseMap
+          universes={universes}
+          onHoverChange={(u) => setHovered(u?.slug || "")}
+        />
+      </div>
+    </div>
+  );
+}
 
 type Universe = {
   name: string;
@@ -51,7 +173,6 @@ const UNIVERSES: (Universe & { description: string })[] = [
 ];
 
 export default function LandingPage() {
-  const carouselRef = useRef<HTMLDivElement | null>(null);
   return (
     <main className="relative z-10 overflow-visible">
       {/* Background elements */}
@@ -125,7 +246,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Universe selection - horizontal carousel */}
+      {/* Universe selection - interactive map with text */}
       <section
         id="universe-picker"
         className="mx-auto w-full max-w-6xl px-6 pb-14 sm:px-8 snap-start"
@@ -135,85 +256,7 @@ export default function LandingPage() {
             Pick your universe
           </h2>
         </div>
-        <div className="relative overflow-visible">
-          <div
-            ref={carouselRef}
-            className="no-scrollbar -mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto overflow-y-visible px-6 py-2 pl-12 pr-12"
-          >
-            {UNIVERSES.map((u) => (
-              <Link
-                key={u.slug}
-                href={`/chat?universe=${encodeURIComponent(u.name)}`}
-                className="group relative min-w-[250px] max-w-[320px] snap-start overflow-visible rounded-xl p-5 transition-transform duration-300 hover:scale-[1.02]"
-                style={{
-                  backgroundImage: themedBackground(u.slug, u.glow),
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                  backgroundRepeat: "no-repeat",
-                  boxShadow: `0 10px 30px rgba(0,0,0,0.25), 0 0 24px ${hexToRgba(
-                    u.glow,
-                    0.22
-                  )}`,
-                }}
-              >
-                <div
-                  className="pointer-events-none absolute -inset-px rounded-xl transition-shadow duration-300"
-                  style={{
-                    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.06)",
-                    borderRadius: "inherit",
-                  }}
-                />
-                <div
-                  className="pointer-events-none absolute -inset-px rounded-xl opacity-0 transition-opacity duration-300 "
-                  style={{
-                    boxShadow: `inset 0 0 0 2px ${hexToRgba(u.glow, 0.65)}`,
-                  }}
-                />
-                <div className="relative z-10">
-                  <div className="mb-1 text-xs uppercase tracking-wide text-muted">
-                    Universe
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-2xl font-semibold">{u.name}</h3>
-                    <div
-                      className="h-3 w-3 rounded-full shadow-[0_0_20px_currentColor]"
-                      style={{ color: u.glow, backgroundColor: u.glow }}
-                    />
-                  </div>
-                  <p className="mt-2 text-sm text-muted">{u.description}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-          <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-between px-2">
-            <button
-              type="button"
-              aria-label="Scroll left"
-              onClick={() =>
-                carouselRef.current?.scrollBy({
-                  left: -(carouselRef.current?.clientWidth ?? 360) * 0.9,
-                  behavior: "smooth",
-                })
-              }
-              className="btn pointer-events-auto rounded-full bg-[color-mix(in_oklab,var(--foreground)_8%,transparent)] p-3 ring-1 ring-[color-mix(in_oklab,var(--foreground)_20%,transparent)]"
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              aria-label="Scroll right"
-              onClick={() =>
-                carouselRef.current?.scrollBy({
-                  left: (carouselRef.current?.clientWidth ?? 360) * 0.9,
-                  behavior: "smooth",
-                })
-              }
-              className="btn pointer-events-auto rounded-full bg-[color-mix(in_oklab,var(--foreground)_8%,transparent)] p-3 ring-1 ring-[color-mix(in_oklab,var(--foreground)_20%,transparent)]"
-            >
-              ›
-            </button>
-          </div>
-        </div>
+        <LorePanelAndMap universes={UNIVERSES} />
       </section>
 
       {/* Featured Character of the Day */}

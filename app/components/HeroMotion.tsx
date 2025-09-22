@@ -8,6 +8,10 @@ export default function HeroMotion() {
     if (!hero) return;
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mqSm = window.matchMedia("(max-width: 639px)");
+    const mqMd = window.matchMedia(
+      "(min-width: 640px) and (max-width: 1023px)"
+    );
     let raf = 0;
     let targetX = 0;
     let targetY = 0;
@@ -51,11 +55,24 @@ export default function HeroMotion() {
         schedule();
     };
 
+    const applyScale = () => {
+      const scale = mqSm.matches ? 1.18 : mqMd.matches ? 1.08 : 1;
+      const opacity = mqSm.matches ? 0.14 : mqMd.matches ? 0.12 : 0.1;
+      hero.style.setProperty("--hero-panels-scale", `${scale}`);
+      hero.style.setProperty("--hero-panel-opacity", `${opacity}`);
+    };
+
+    applyScale();
+    mqSm.addEventListener("change", applyScale);
+    mqMd.addEventListener("change", applyScale);
+
     hero.addEventListener("mousemove", onMove);
     hero.addEventListener("mouseleave", onLeave);
     return () => {
       hero.removeEventListener("mousemove", onMove);
       hero.removeEventListener("mouseleave", onLeave);
+      mqSm.removeEventListener("change", applyScale);
+      mqMd.removeEventListener("change", applyScale);
       if (raf) cancelAnimationFrame(raf);
     };
   }, []);
