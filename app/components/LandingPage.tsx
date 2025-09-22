@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useRef } from "react";
+import HeroCollage from "./HeroCollage";
+import HeroMotion from "./HeroMotion";
 
 type Universe = {
   name: string;
@@ -51,7 +53,7 @@ const UNIVERSES: (Universe & { description: string })[] = [
 export default function LandingPage() {
   const carouselRef = useRef<HTMLDivElement | null>(null);
   return (
-    <main className="relative overflow-visible">
+    <main className="relative z-10 overflow-visible">
       {/* Background elements */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="animated-gradient absolute -top-1/4 left-1/2 h-[70vmax] w-[70vmax] -translate-x-1/2 rounded-full opacity-60" />
@@ -59,44 +61,79 @@ export default function LandingPage() {
         <div className="orb absolute -left-10 top-20 h-40 w-40 opacity-40" />
         <div className="orb absolute bottom-10 right-10 h-52 w-52 opacity-40" />
       </div>
+      {/* Ambient particles overlay (non-interactive) */}
+      <div className="particles" aria-hidden>
+        {Array.from({ length: 22 }).map((_, i) => (
+          <span
+            key={i}
+            className="particle"
+            style={{
+              left: `${(i * 97) % 100}%`,
+              width: `${6 + ((i * 13) % 10)}px`,
+              height: `${6 + ((i * 13) % 10)}px`,
+              animationDuration: `${18 + ((i * 7) % 14)}s`,
+              animationDelay: `${(i * 3) % 20}s`,
+              opacity: 0.25 + ((i * 7) % 10) / 100,
+            }}
+          />
+        ))}
+      </div>
 
       {/* Hero */}
-      <section className="mx-auto flex min-h-[82vh] w-full max-w-6xl flex-col items-center justify-center px-6 text-center sm:px-8">
+      <section
+        id="hero"
+        className="relative flex h-screen min-h-screen w-full flex-col items-center justify-center px-6 text-center sm:px-8 snap-start"
+      >
+        <HeroMotion />
+        <HeroCollage />
         <p className="fade-in-up text-xs uppercase tracking-widest text-muted">
-          Anime-inspired AI Chatbot
+          A fun way to learn
         </p>
-        <h1 className="fade-in-up delay-1 mt-3 max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl md:text-6xl">
-          Your favorite characters. Your conversations.
+        <h1 className="hero-headline mt-3 max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl md:text-6xl font-display">
+          <span className="line line-1">Think like your heroes</span>
           <br />
-          <span className="gradient-text">One multiverse.</span>
+          {/* <span className="line line-2">Physics by Yoda, DSA by Goku </span> */}
+          {/* <br /> */}
+          <span className="line line-3 gradient-text whitespace-nowrap">
+            Complex ideas, their way
+          </span>
         </h1>
         <h2 className="fade-in-up delay-2 mt-5 max-w-2xl text-base text-muted sm:text-lg">
-          Pick a universe, choose a hero or villain, and dive into chats that
-          feel truly in-character. From Konoha to the Grand Line - the
-          conversation starts here.
+          Every character has unique wisdom and perspective. Unlock new ways of
+          understanding by learning from the minds you&apos;re already drawn to.
+          Choose any universe, pick any hero or villain, and discover how
+          they&apos;d explain the world&apos;s most fascinating concepts
         </h2>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
           <Link
             href="/chat"
-            className="btn hover-lift rounded-full bg-[color-mix(in_oklab,var(--foreground)_8%,transparent)] px-6 py-3 text-base font-medium ring-1 ring-[color-mix(in_oklab,var(--foreground)_20%,transparent)] shadow-[0_0_30px_rgba(255,122,69,0.25)]"
-            style={{ boxShadow: "0 0 25px rgba(167,139,250,0.35)" }}
+            className="btn btn-primary-glow hover-lift rounded-full bg-[color-mix(in_oklab,var(--foreground)_8%,transparent)] px-6 py-3 text-base font-medium ring-1 ring-[color-mix(in_oklab,var(--foreground)_20%,transparent)]"
           >
-            Get Started
+            Pick your sensei
           </Link>
           <Link
             href="/login"
-            className="btn hover-lift rounded-full bg-[color-mix(in_oklab,var(--foreground)_5%,transparent)] px-6 py-3 text-base font-medium ring-1 ring-[color-mix(in_oklab,var(--foreground)_20%,transparent)]"
+            className="btn btn-outline-animated hover-lift rounded-full bg-[color-mix(in_oklab,var(--foreground)_5%,transparent)] px-6 py-3 text-base font-medium ring-1 ring-[color-mix(in_oklab,var(--foreground)_20%,transparent)]"
           >
             Login
           </Link>
         </div>
+
+        <div className="scroll-indicator" aria-hidden>
+          <span className="chevron">⌄</span>
+        </div>
       </section>
 
       {/* Universe selection - horizontal carousel */}
-      <section className="mx-auto w-full max-w-6xl px-6 pb-14 sm:px-8">
+      <section
+        id="universe-picker"
+        className="mx-auto w-full max-w-6xl px-6 pb-14 sm:px-8 snap-start"
+      >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-medium text-muted">Pick your universe</h2>
+          <h2 className="text-lg font-medium text-muted font-display">
+            Pick your universe
+          </h2>
         </div>
         <div className="relative overflow-visible">
           <div
@@ -180,9 +217,12 @@ export default function LandingPage() {
       </section>
 
       {/* Featured Character of the Day */}
-      <section className="mx-auto w-full max-w-6xl px-6 pb-16 sm:px-8">
+      <section
+        id="featured"
+        className="mx-auto w-full max-w-6xl px-6 pb-16 sm:px-8 snap-start"
+      >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-medium text-muted">
+          <h2 className="text-lg font-medium text-muted font-display">
             Featured Character of the Day
           </h2>
         </div>
@@ -190,9 +230,14 @@ export default function LandingPage() {
       </section>
 
       {/* Features */}
-      <section className="mx-auto w-full max-w-6xl px-6 pb-24 sm:px-8">
+      <section
+        id="features"
+        className="mx-auto w-full max-w-6xl px-6 pb-24 sm:px-8 snap-start"
+      >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-medium text-muted">Why you’ll love it</h2>
+          <h2 className="text-lg font-medium text-muted font-display">
+            Why you’ll love it
+          </h2>
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="glass-card hover-lift rounded-xl p-6">
@@ -223,9 +268,12 @@ export default function LandingPage() {
       </section>
 
       {/* Coming Soon Teaser */}
-      <section className="mx-auto w-full max-w-6xl px-6 pb-16 sm:px-8">
+      <section
+        id="coming-soon"
+        className="mx-auto w-full max-w-6xl px-6 pb-16 sm:px-8 snap-start"
+      >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-medium text-muted">
+          <h2 className="text-lg font-medium text-muted font-display">
             More worlds are opening soon…
           </h2>
         </div>
