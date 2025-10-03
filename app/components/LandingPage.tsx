@@ -415,57 +415,93 @@ function themedBackground(slug: string, glow: string): string {
 
 type FeaturedCharacter = {
   name: string;
-  quote: string;
+  quotes: string[];
   universeSlug: string;
   universeName: string;
   glow: string;
+  icon: string;
+  ctaText: string;
 };
 
 function getDailyCharacter(): FeaturedCharacter {
   const choices: FeaturedCharacter[] = [
     {
       name: "Naruto Uzumaki",
-      quote: "I’m gonna be Hokage! Believe it!",
+      quotes: [
+        "I'm gonna be Hokage! Believe it!",
+        "Never give up, that's my nindō: my ninja way!",
+        "When people are protecting something truly special to them, they can become as strong as they can be.",
+      ],
       universeSlug: "naruto",
       universeName: "Naruto",
       glow: "#f59e0b",
+      icon: "🍥",
+      ctaText: "Learn from Naruto",
     },
     {
       name: "Monkey D. Luffy",
-      quote: "I’m gonna be King of the Pirates!",
+      quotes: [
+        "I'm gonna be King of the Pirates!",
+        "I don't want to conquer anything. I just think the guy with the most freedom in this ocean is the Pirate King!",
+        "Power isn't determined by your size, but the size of your heart and dreams!",
+      ],
       universeSlug: "one-piece",
       universeName: "One Piece",
       glow: "#60a5fa",
+      icon: "☠️",
+      ctaText: "Set Sail with Luffy",
     },
     {
       name: "Mikasa Ackerman",
-      quote: "As long as I’m alive, I’ll protect you.",
+      quotes: [
+        "As long as I'm alive, I'll protect you.",
+        "This world is cruel, but also very beautiful.",
+        "If we don't win, we die. If we win, we live. If we don't fight, we can't win.",
+      ],
       universeSlug: "attack-on-titan",
       universeName: "Attack on Titan",
       glow: "#9ca3af",
+      icon: "⚔️",
+      ctaText: "Join the Scouts",
     },
     {
       name: "Goku",
-      quote: "The harder the battle, the greater the victory!",
+      quotes: [
+        "The harder the battle, the greater the victory!",
+        "I am the hope of the universe!",
+        "Power comes in response to a need, not a desire.",
+      ],
       universeSlug: "dragon-ball",
       universeName: "Dragon Ball",
       glow: "#fb923c",
+      icon: "⚡",
+      ctaText: "Train with Goku",
     },
     {
       name: "Yuji Itadori",
-      quote:
-        "I don’t know how I’ll feel when I’m dead, but I don’t want to regret how I lived.",
+      quotes: [
+        "I don't know how I'll feel when I'm dead, but I don't want to regret how I lived.",
+        "I'm going to save people and make sure they have a proper death.",
+        "Even if I'm the only one, I'll kill you!",
+      ],
       universeSlug: "jujutsu-kaisen",
       universeName: "Jujutsu Kaisen",
       glow: "#7c3aed",
+      icon: "👁️",
+      ctaText: "Face the Curses",
     },
     {
       name: "Tanjiro Kamado",
-      quote:
+      quotes: [
         "No matter how many people you may lose, you have no choice but to go on living.",
+        "All I can do is work hard! That's the story of my life!",
+        "Feel the rage. The powerful, pure rage of not being able to forgive will become your unswerving drive.",
+      ],
       universeSlug: "demon-slayer",
       universeName: "Demon Slayer",
       glow: "#10b981",
+      icon: "🗡️",
+      ctaText: "Master the Breath",
     },
   ];
   const dayIndex =
@@ -475,47 +511,163 @@ function getDailyCharacter(): FeaturedCharacter {
 
 function FeaturedCharacterCard() {
   const c = getDailyCharacter();
+  const [currentQuoteIndex, setCurrentQuoteIndex] = React.useState(0);
+  const [isVisible, setIsVisible] = React.useState(false);
+  const [timeUntilReset, setTimeUntilReset] = React.useState("");
+
+  // Quote cycling
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentQuoteIndex((prev) => (prev + 1) % c.quotes.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [c.quotes.length]);
+
+  // Card entrance animation
+  React.useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Countdown timer
+  React.useEffect(() => {
+    const updateCountdown = () => {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      const diff = tomorrow.getTime() - now.getTime();
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      setTimeUntilReset(
+        `${hours.toString().padStart(2, "0")}:${minutes
+          .toString()
+          .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+      );
+    };
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div
-      className="relative overflow-hidden rounded-xl p-6 md:p-8"
+      className="featured-character-card"
       style={{
         backgroundImage: themedBackground(c.universeSlug, c.glow),
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-        boxShadow: `0 20px 50px rgba(0,0,0,0.35), 0 0 40px ${hexToRgba(
+        borderColor: hexToRgba(c.glow, 0.25),
+        boxShadow: `0 20px 60px rgba(0,0,0,0.4), 0 0 80px ${hexToRgba(
           c.glow,
-          0.25
+          0.15
         )}`,
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "scale(1)" : "scale(0.95)",
+        transition: "opacity 600ms ease, transform 600ms ease",
+        // @ts-expect-error CSS var
+        "--universe-glow": c.glow,
       }}
     >
+      {/* Animated aura layers */}
       <div
-        className="pointer-events-none absolute -inset-10 opacity-70 blur-2xl"
-        style={{
-          backgroundImage: radialGradient(c.glow),
-          backgroundRepeat: "no-repeat",
-        }}
+        className="character-aura character-aura-1"
+        style={{ background: radialGradient(c.glow) }}
       />
-      <div className="relative z-10">
-        <div className="text-xs uppercase tracking-wide text-muted">
-          {c.universeName}
+      <div
+        className="character-aura character-aura-2"
+        style={{ background: radialGradient(c.glow) }}
+      />
+      <div
+        className="character-aura character-aura-3"
+        style={{ background: radialGradient(c.glow) }}
+      />
+
+      {/* Universe badge */}
+      <div
+        className="universe-badge"
+        style={{
+          borderColor: hexToRgba(c.glow, 0.3),
+          boxShadow: `0 0 20px ${hexToRgba(c.glow, 0.2)}`,
+        }}
+      >
+        <span className="text-lg">{c.icon}</span>
+        <span className="text-xs font-medium">{c.universeName}</span>
+      </div>
+
+      {/* Character image placeholder */}
+      <div className="character-image-section">
+        <div className="character-silhouette">
+          <div className="character-placeholder">{c.icon}</div>
         </div>
-        <h3 className="mt-1 text-3xl font-semibold sm:text-4xl">{c.name}</h3>
-        <p className="mt-2 max-w-2xl text-sm text-muted sm:text-base">
-          “{c.quote}”
-        </p>
-        <div className="mt-5">
+      </div>
+
+      {/* Content section */}
+      <div className="character-content">
+        <h3
+          className="character-name font-display"
+          style={{
+            background: `linear-gradient(135deg, ${c.glow}, ${hexToRgba(
+              c.glow,
+              0.6
+            )})`,
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            color: "transparent",
+          }}
+        >
+          {c.name}
+        </h3>
+
+        {/* Quote cycling area */}
+        <div className="quote-container">
+          {c.quotes.map((quote, index) => (
+            <p
+              key={index}
+              className="quote-text"
+              style={{
+                opacity: currentQuoteIndex === index ? 1 : 0,
+                transform:
+                  currentQuoteIndex === index
+                    ? "translateY(0)"
+                    : "translateY(10px)",
+                position: currentQuoteIndex === index ? "relative" : "absolute",
+                transition: "opacity 600ms ease, transform 600ms ease",
+              }}
+            >
+              &ldquo;{quote}&rdquo;
+            </p>
+          ))}
+        </div>
+
+        {/* CTA Button */}
+        <div className="mt-6">
           <Link
             href={`/chat?universe=${encodeURIComponent(
               c.universeName
             )}&character=${encodeURIComponent(c.name)}`}
-            className="btn hover-lift rounded-full bg-[color-mix(in_oklab,var(--foreground)_8%,transparent)] px-5 py-2.5 text-sm font-medium ring-1 ring-[color-mix(in_oklab,var(--foreground)_20%,transparent)]"
-            style={{ boxShadow: `0 0 22px ${hexToRgba(c.glow, 0.35)}` }}
+            className="cta-button"
+            style={{
+              borderColor: hexToRgba(c.glow, 0.4),
+              boxShadow: `0 0 30px ${hexToRgba(
+                c.glow,
+                0.3
+              )}, 0 4px 12px rgba(0,0,0,0.3)`,
+            }}
           >
-            Chat Now
+            <span className="relative z-10">{c.ctaText} →</span>
           </Link>
         </div>
+
+        {/* Countdown timer */}
+        <div className="countdown-timer">
+          <span className="text-muted">Resets in: </span>
+          <span className="font-mono" style={{ color: c.glow }}>
+            {timeUntilReset}
+          </span>
+        </div>
       </div>
+
+
     </div>
   );
 }
