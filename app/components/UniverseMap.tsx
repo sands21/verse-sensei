@@ -302,7 +302,7 @@ export default function UniverseMap({ universes, onHoverChange }: Props) {
 
       {/* Mobile fallback: vertical portals */}
       {isMobile && (
-        <div className="mobile-portals">
+        <div className="mobile-portals no-scrollbar overflow-y-auto h-full">
           {nodes.map((n) => (
             <button
               key={n.slug}

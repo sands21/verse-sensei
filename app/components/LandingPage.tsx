@@ -96,8 +96,14 @@ function LorePanelAndMap({ universes }: { universes: typeof UNIVERSES }) {
       <div
         className="glass-card rounded-xl p-6 md:p-7 h-full hidden md:block"
         style={{
-          boxShadow: glow ? `0 10px 30px ${hexToRgba(glow, 0.22)}` : undefined,
-          borderColor: glow ? hexToRgba(glow, 0.25) : undefined,
+          boxShadow: glow
+            ? `0 15px 40px ${hexToRgba(glow, 0.25)}, 0 8px 16px ${hexToRgba(
+                glow,
+                0.15
+              )}, inset 0 1px 0 rgba(255,255,255,0.05)`
+            : "0 15px 40px rgba(0,0,0,0.4), 0 8px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)",
+          border: "none",
+          background: "#0a0a0a",
         }}
       >
         <div
@@ -219,23 +225,31 @@ export default function LandingPage() {
             Complex ideas, their way
           </span>
         </h1>
-        <h2 className="fade-in-up delay-2 mt-5 max-w-2xl text-base text-muted sm:text-lg">
+        <h2
+          className="fade-in-up delay-2 mt-6 max-w-2xl text-base text-muted sm:text-lg"
+          style={{
+            lineHeight: "1.7",
+            textShadow: "0 2px 4px rgba(0, 0, 0, 0.5)",
+          }}
+        >
           Every character has unique wisdom and perspective. Unlock new ways of
           understanding by learning from the minds you&apos;re already drawn to.
           Choose any universe, pick any hero or villain, and discover how
           they&apos;d explain the world&apos;s most fascinating concepts
         </h2>
 
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-5">
           <Link
             href="/chat"
-            className="btn btn-primary-glow hover-lift rounded-full bg-[color-mix(in_oklab,var(--foreground)_8%,transparent)] px-6 py-3 text-base font-medium ring-1 ring-[color-mix(in_oklab,var(--foreground)_20%,transparent)]"
+            className="btn btn-primary-glow hover-lift-enhanced rounded-full bg-[color-mix(in_oklab,var(--foreground)_8%,transparent)] px-8 py-3.5 text-base font-medium ring-1 ring-[color-mix(in_oklab,var(--foreground)_20%,transparent)] transition-all duration-200"
+            style={{ cursor: "pointer" }}
           >
-            Pick your sensei
+            Pick Your Sensei
           </Link>
           <Link
             href="/login"
-            className="btn btn-outline-animated hover-lift rounded-full bg-[color-mix(in_oklab,var(--foreground)_5%,transparent)] px-6 py-3 text-base font-medium ring-1 ring-[color-mix(in_oklab,var(--foreground)_20%,transparent)]"
+            className="btn btn-outline-animated hover-lift-enhanced rounded-full bg-[color-mix(in_oklab,var(--foreground)_5%,transparent)] px-8 py-3.5 text-base font-medium ring-1 ring-[color-mix(in_oklab,var(--foreground)_20%,transparent)] transition-all duration-200"
+            style={{ cursor: "pointer" }}
           >
             Login
           </Link>
@@ -249,11 +263,11 @@ export default function LandingPage() {
       {/* Universe selection - interactive map with text */}
       <section
         id="universe-picker"
-        className="mx-auto w-full max-w-6xl px-6 pb-14 sm:px-8 snap-start"
+        className="mx-auto w-full max-w-7xl px-6 py-20 sm:px-8 snap-start"
       >
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-medium text-muted font-display">
-            Pick your universe
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-xl font-medium text-muted font-display">
+            Pick Your Universe
           </h2>
         </div>
         <LorePanelAndMap universes={UNIVERSES} />
@@ -262,77 +276,214 @@ export default function LandingPage() {
       {/* Featured Character of the Day */}
       <section
         id="featured"
-        className="mx-auto w-full max-w-6xl px-6 pb-16 sm:px-8 snap-start"
+        className="mx-auto w-full max-w-7xl px-6 py-20 sm:px-8 snap-start"
       >
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-medium text-muted font-display">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-xl font-medium text-muted font-display">
             Featured Character of the Day
           </h2>
         </div>
         <FeaturedCharacterCard />
       </section>
 
-      {/* Features */}
+      {/* Features - Bento Grid */}
       <section
         id="features"
-        className="mx-auto w-full max-w-6xl px-6 pb-24 sm:px-8 snap-start"
+        className="mx-auto w-full max-w-7xl px-6 py-20 sm:px-8 snap-start"
       >
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-medium text-muted font-display">
-            Why you’ll love it
+        <div className="mb-6 text-center">
+          <h2 className="text-2xl sm:text-3xl font-semibold font-display">
+            Why You&apos;ll Love Traveling These Worlds
           </h2>
+          <p
+            className="mt-3 text-base text-muted"
+            style={{ lineHeight: "1.6" }}
+          >
+            Each interaction feels alive, powered by anime logic and human
+            curiosity.
+          </p>
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="glass-card hover-lift rounded-xl p-6">
-            <div className="text-2xl">🤖</div>
-            <h4 className="mt-3 text-lg font-semibold">Persona-true replies</h4>
-            <p className="mt-1 text-sm text-muted">
-              Every chat feels authentic — like the character is really talking
-              to you.
-            </p>
+
+        {/* Bento Grid */}
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-6 grid-rows-1 md:grid-rows-2 gap-6 auto-rows-fr">
+          {/* Tile 1: Authentic Persona Chats - Main highlight (2x1) */}
+          <div
+            className="group relative overflow-hidden rounded-2xl p-8 md:col-span-3 md:row-span-1
+                       bg-[#1a0f2e]
+                       hover:shadow-[0_8px_24px_rgba(124,58,237,0.4),0_0_20px_rgba(124,58,237,0.3)]
+                       transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+                       shadow-[0_4px_20px_rgba(124,58,237,0.15),0_2px_10px_rgba(0,0,0,0.3)]
+                       feature-card-lift"
+          >
+            <div className="relative z-10">
+              <div className="text-4xl mb-4 feature-icon-float">💬</div>
+              <h3 className="text-xl sm:text-2xl font-semibold mb-3">
+                Authentic Persona Chats
+              </h3>
+              <p className="text-base text-muted" style={{ lineHeight: "1.6" }}>
+                Every message sounds and feels like your hero&apos;s real voice.
+              </p>
+            </div>
+            {/* Subtle glow effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-400/5 to-purple-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </div>
-          <div className="glass-card hover-lift rounded-xl p-6">
-            <div className="text-2xl">✨</div>
-            <h4 className="mt-3 text-lg font-semibold">
-              Smooth & fun interactions
-            </h4>
-            <p className="mt-1 text-sm text-muted">
-              Playful micro-animations, no clutter. Feels alive.
-            </p>
+
+          {/* Tile 2: Instant Power-Up */}
+          <div
+            className="group relative overflow-hidden rounded-2xl p-8 md:col-span-3 md:row-span-1
+                       bg-[#2e1f0a]
+                       hover:shadow-[0_8px_24px_rgba(251,146,60,0.4),0_0_20px_rgba(251,146,60,0.3)]
+                       transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+                       shadow-[0_4px_20px_rgba(251,146,60,0.15),0_2px_10px_rgba(0,0,0,0.3)]
+                       feature-card-lift"
+          >
+            <div className="relative z-10">
+              <div className="text-3xl mb-4 feature-icon-float">⚡</div>
+              <h3 className="text-lg sm:text-xl font-semibold mb-3">
+                Instant Power-Up
+              </h3>
+              <p className="text-base text-muted" style={{ lineHeight: "1.6" }}>
+                Jump into conversations instantly, no setup, no delay.
+              </p>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/5 to-orange-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </div>
-          <div className="glass-card hover-lift rounded-xl p-6">
-            <div className="text-2xl">⚡</div>
-            <h4 className="mt-3 text-lg font-semibold">Fast startup</h4>
-            <p className="mt-1 text-sm text-muted">
-              Jump straight into the action — no setup, no delay.
-            </p>
+
+          {/* Tile 3: Feels Alive */}
+          <div
+            className="group relative overflow-hidden rounded-2xl p-8 md:col-span-2 md:row-span-1
+                       bg-[#2e0a1e]
+                       hover:shadow-[0_8px_24px_rgba(236,72,153,0.4),0_0_20px_rgba(236,72,153,0.3)]
+                       transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+                       shadow-[0_4px_20px_rgba(236,72,153,0.15),0_2px_10px_rgba(0,0,0,0.3)]
+                       feature-card-lift"
+          >
+            <div className="relative z-10">
+              <div className="text-3xl mb-4 feature-icon-float">✨</div>
+              <h3 className="text-lg sm:text-xl font-semibold mb-3">
+                Feels Alive
+              </h3>
+              <p className="text-base text-muted" style={{ lineHeight: "1.6" }}>
+                Micro-animations and reactions that make every chat fun.
+              </p>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-br from-pink-400/5 to-rose-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </div>
+
+          {/* Tile 4: Expanding Universes */}
+          <div
+            className="group relative overflow-hidden rounded-2xl p-8 md:col-span-2 md:row-span-1
+                       bg-[#0a1e2e]
+                       hover:shadow-[0_8px_24px_rgba(34,211,238,0.4),0_0_20px_rgba(34,211,238,0.3)]
+                       transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+                       shadow-[0_4px_20px_rgba(34,211,238,0.15),0_2px_10px_rgba(0,0,0,0.3)]
+                       feature-card-lift"
+          >
+            <div className="relative z-10">
+              <div className="text-3xl mb-4 feature-icon-float">🌍</div>
+              <h3 className="text-lg sm:text-xl font-semibold mb-3">
+                Expanding Universes
+              </h3>
+              <p className="text-base text-muted" style={{ lineHeight: "1.6" }}>
+                New worlds and characters arriving soon. Stay tuned.
+              </p>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/5 to-blue-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          </div>
+
+          {/* Tile 5: Guided by Wisdom */}
+          <div
+            className="group relative overflow-hidden rounded-2xl p-8 md:col-span-2 md:row-span-1
+                       bg-[#0a2e1a]
+                       hover:shadow-[0_8px_24px_rgba(16,185,129,0.4),0_0_20px_rgba(16,185,129,0.3)]
+                       transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+                       shadow-[0_4px_20px_rgba(16,185,129,0.15),0_2px_10px_rgba(0,0,0,0.3)]
+                       feature-card-lift"
+          >
+            <div className="relative z-10">
+              <div className="text-3xl mb-4 feature-icon-float">🧭</div>
+              <h3 className="text-lg sm:text-xl font-semibold mb-3">
+                Guided by Wisdom
+              </h3>
+              <p className="text-base text-muted" style={{ lineHeight: "1.6" }}>
+                Learn through stories, not lectures.
+              </p>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/5 to-teal-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          </div>
+
+          {/* Tile 6: Built for Curious Minds */}
+          <div
+            className="group relative overflow-hidden rounded-2xl p-8 md:col-span-2 md:row-span-1
+                       bg-[#1e0a2e]
+                       hover:shadow-[0_8px_24px_rgba(139,92,246,0.4),0_0_20px_rgba(139,92,246,0.3)]
+                       transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+                       shadow-[0_4px_20px_rgba(139,92,246,0.15),0_2px_10px_rgba(0,0,0,0.3)]
+                       feature-card-lift"
+          >
+            <div className="relative z-10">
+              <div className="text-3xl mb-4 feature-icon-float">🧠</div>
+              <h3 className="text-lg sm:text-xl font-semibold mb-3">
+                Built for Curious Minds
+              </h3>
+              <p className="text-base text-muted" style={{ lineHeight: "1.6" }}>
+                Designed to teach, inspire, and entertain.
+              </p>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-400/5 to-fuchsia-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          </div>
+
+          {/* Tile 7: CTA Button */}
+          <Link
+            href="/chat"
+            className="group relative overflow-hidden rounded-2xl p-10 md:col-span-4 md:row-span-1
+                       bg-[#2e1f0a]
+                       hover:shadow-[0_8px_24px_rgba(251,146,60,0.4),0_0_20px_rgba(251,146,60,0.3)]
+                       transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+                       shadow-[0_6px_25px_rgba(251,146,60,0.2),0_3px_12px_rgba(0,0,0,0.3)]
+                       cursor-pointer flex items-center justify-center feature-card-lift-prominent"
+          >
+            <div className="relative z-10 text-center">
+              <div className="text-5xl mb-4 feature-icon-float">🚀</div>
+              <h3 className="text-2xl sm:text-3xl font-semibold mb-3 gradient-text">
+                Start Your Journey
+              </h3>
+              <p className="text-base text-muted" style={{ lineHeight: "1.6" }}>
+                Pick your universe and begin learning →
+              </p>
+            </div>
+            {/* Animated pulse effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-400/10 to-red-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-amber-500/5 to-red-500/5" />
+          </Link>
         </div>
       </section>
 
       {/* Coming Soon Teaser */}
       <section
         id="coming-soon"
-        className="mx-auto w-full max-w-6xl px-6 pb-16 sm:px-8 snap-start"
+        className="mx-auto w-full max-w-7xl px-6 py-20 sm:px-8 snap-start"
       >
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-medium text-muted font-display">
-            More worlds are opening soon…
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-xl font-medium text-muted font-display">
+            More Worlds Are Opening Soon…
           </h2>
         </div>
-        <div className="no-scrollbar -mx-6 flex snap-x gap-4 overflow-x-auto px-6">
+        <div className="no-scrollbar -mx-6 flex snap-x gap-6 overflow-x-auto px-6">
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className="relative min-w-[220px] snap-start overflow-hidden rounded-xl p-6 text-center"
+              className="relative min-w-[220px] snap-start overflow-hidden rounded-xl p-8 text-center coming-soon-card"
               style={{
                 background:
-                  "linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))",
+                  "linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
                 boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+                opacity: 0.6,
               }}
             >
               <div
-                className="pointer-events-none absolute inset-0 opacity-60 blur-xl"
+                className="pointer-events-none absolute inset-0 opacity-40 blur-xl"
                 style={{
                   backgroundImage: radialGradient(
                     `#${(((i + 2) * 123456) % 0xffffff)
@@ -342,18 +493,38 @@ export default function LandingPage() {
                   backgroundRepeat: "no-repeat",
                 }}
               />
-              <div className="relative z-10 text-3xl text-muted">?</div>
+              <div className="relative z-10">
+                <div
+                  className="text-5xl text-muted/40 mb-3"
+                  style={{ filter: "blur(2px)" }}
+                >
+                  ?
+                </div>
+                <div
+                  className="inline-block px-3 py-1 text-xs font-medium rounded-full"
+                  style={{
+                    background: "rgba(255, 255, 255, 0.05)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    color: "var(--muted)",
+                  }}
+                >
+                  Coming Soon
+                </div>
+              </div>
             </div>
           ))}
         </div>
-        <p className="mt-3 text-center text-sm text-muted">
-          Hint: More heroes, villains, and universes are on their way.
+        <p
+          className="mt-6 text-center text-sm text-muted"
+          style={{ lineHeight: "1.6" }}
+        >
+          More heroes, villains, and universes are on their way.
         </p>
       </section>
 
       {/* Footer */}
       <footer className="mt-8 bg-[color-mix(in_oklab,black_18%,var(--background))] py-10">
-        <div className="mx-auto w-full max-w-6xl px-6 text-center sm:px-8">
+        <div className="mx-auto w-full max-w-7xl px-6 text-center sm:px-8">
           <p className="text-sm text-muted">
             Powered by ninjas, pirates, titans, and curses ⚡
           </p>
@@ -381,7 +552,7 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 
 function radialGradient(hex: string): string {
-  const rgba = hexToRgba(hex, 0.22);
+  const rgba = hexToRgba(hex, 0.4);
   return `radial-gradient(40% 40% at 50% 50%, ${rgba}, transparent 70%)`;
 }
 
@@ -390,26 +561,26 @@ function themedBackground(slug: string, glow: string): string {
     case "naruto":
       return `linear-gradient(135deg, ${hexToRgba(
         glow,
-        0.15
-      )}, rgba(255,255,255,0.02)), radial-gradient(60% 60% at 20% 20%, ${hexToRgba(
+        0.35
+      )}, rgba(20,15,10,0.98)), radial-gradient(60% 60% at 20% 20%, ${hexToRgba(
         glow,
-        0.18
-      )}, transparent 60%), radial-gradient(50% 50% at 80% 30%, rgba(255,122,69,0.12), transparent 60%)`;
+        0.4
+      )}, transparent 60%), radial-gradient(50% 50% at 80% 30%, rgba(255,122,69,0.25), transparent 60%)`;
     case "one-piece":
-      return `linear-gradient(135deg, rgba(96,165,250,0.14), rgba(34,211,238,0.10)), radial-gradient(40% 40% at 80% 70%, rgba(34,211,238,0.15), transparent 60%)`;
+      return `linear-gradient(135deg, rgba(96,165,250,0.35), rgba(15,20,25,0.98)), radial-gradient(40% 40% at 80% 70%, rgba(34,211,238,0.3), transparent 60%)`;
     case "attack-on-titan":
-      return `linear-gradient(135deg, rgba(156,163,175,0.14), rgba(75,85,99,0.10)), radial-gradient(40% 40% at 70% 30%, rgba(16,185,129,0.10), transparent 60%)`;
+      return `linear-gradient(135deg, rgba(156,163,175,0.35), rgba(20,20,20,0.98)), radial-gradient(40% 40% at 70% 30%, rgba(16,185,129,0.25), transparent 60%)`;
     case "dragon-ball":
-      return `linear-gradient(135deg, rgba(251,146,60,0.16), rgba(239,68,68,0.10)), radial-gradient(40% 40% at 20% 80%, rgba(251,146,60,0.18), transparent 60%)`;
+      return `linear-gradient(135deg, rgba(251,146,60,0.35), rgba(25,15,10,0.98)), radial-gradient(40% 40% at 20% 80%, rgba(251,146,60,0.4), transparent 60%)`;
     case "jujutsu-kaisen":
-      return `linear-gradient(135deg, rgba(124,58,237,0.16), rgba(79,70,229,0.10)), radial-gradient(40% 40% at 80% 20%, rgba(124,58,237,0.18), transparent 60%)`;
+      return `linear-gradient(135deg, rgba(124,58,237,0.35), rgba(20,10,25,0.98)), radial-gradient(40% 40% at 80% 20%, rgba(124,58,237,0.4), transparent 60%)`;
     case "demon-slayer":
-      return `linear-gradient(135deg, rgba(16,185,129,0.14), rgba(239,68,68,0.10)), radial-gradient(40% 40% at 30% 70%, rgba(16,185,129,0.16), transparent 60%)`;
+      return `linear-gradient(135deg, rgba(16,185,129,0.35), rgba(10,20,15,0.98)), radial-gradient(40% 40% at 30% 70%, rgba(16,185,129,0.3), transparent 60%)`;
     default:
       return `linear-gradient(135deg, ${hexToRgba(
         glow,
-        0.12
-      )}, rgba(255,255,255,0.02))`;
+        0.3
+      )}, rgba(15,15,15,0.98))`;
   }
 }
 
@@ -556,11 +727,14 @@ function FeaturedCharacterCard() {
       className="featured-character-card"
       style={{
         backgroundImage: themedBackground(c.universeSlug, c.glow),
-        borderColor: hexToRgba(c.glow, 0.25),
-        boxShadow: `0 20px 60px rgba(0,0,0,0.4), 0 0 80px ${hexToRgba(
+        border: "none",
+        boxShadow: `0 20px 60px rgba(0,0,0,0.6), 0 12px 35px ${hexToRgba(
           c.glow,
-          0.15
-        )}`,
+          0.4
+        )}, 0 6px 20px ${hexToRgba(c.glow, 0.3)}, 0 0 100px ${hexToRgba(
+          c.glow,
+          0.2
+        )}, inset 0 1px 0 rgba(255,255,255,0.1)`,
         opacity: isVisible ? 1 : 0,
         transform: isVisible ? "scale(1)" : "scale(0.95)",
         transition: "opacity 600ms ease, transform 600ms ease",
@@ -586,8 +760,18 @@ function FeaturedCharacterCard() {
       <div
         className="universe-badge"
         style={{
-          borderColor: hexToRgba(c.glow, 0.3),
-          boxShadow: `0 0 20px ${hexToRgba(c.glow, 0.2)}`,
+          border: "none",
+          boxShadow: `0 6px 20px ${hexToRgba(
+            c.glow,
+            0.4
+          )}, 0 3px 10px ${hexToRgba(
+            c.glow,
+            0.3
+          )}, inset 0 1px 0 rgba(255,255,255,0.15)`,
+          background: `linear-gradient(135deg, ${hexToRgba(
+            c.glow,
+            0.35
+          )} 0%, rgba(20,20,25,0.98) 100%)`,
         }}
       >
         <span className="text-lg">{c.icon}</span>
@@ -666,8 +850,6 @@ function FeaturedCharacterCard() {
           </span>
         </div>
       </div>
-
-
     </div>
   );
 }
