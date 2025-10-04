@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import supabase from "@/lib/supabaseClient";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
   const search = useSearchParams();
   const [email, setEmail] = useState("");
@@ -18,34 +18,65 @@ export default function LoginPage() {
 
   const mapAuthError = (raw: string): string => {
     const m = (raw || "").toLowerCase();
-    if (m.includes("invalid login")) return "Incorrect email or password.";
-    if (m.includes("not confirmed"))
+    if (
+      m.includes("already registered") ||
+      m.includes("email already") ||
+      m.includes("in use")
+    ) {
+      return "Email already exists. Try signing in instead.";
+    }
+    if (m.includes("at least 6") || m.includes("password should")) {
+      return "Password must be at least 6 characters.";
+    }
+    if (m.includes("invalid login")) {
+      return "Incorrect email or password.";
+    }
+    if (m.includes("not confirmed")) {
       return "Please verify your email via the link we sent.";
-    if (m.includes("too many") || m.includes("rate limit") || m.includes("429"))
+    }
+    if (
+      m.includes("too many") ||
+      m.includes("rate limit") ||
+      m.includes("429")
+    ) {
       return "Too many attempts. Please try again later.";
-    if (m.includes("expired") && m.includes("otp"))
+    }
+    if (m.includes("expired") && m.includes("otp")) {
       return "This magic link expired. Request a new one.";
-    return raw || "Failed to sign in.";
+    }
+    return raw || "Something went wrong.";
   };
 
   useEffect(() => {
     const handleRedirect = async () => {
-      // Handle magic-link redirect (PKCE)
       const code = search.get("code");
       if (code) {
         try {
-          setStatus("Signing you in...");
+          setStatus("Confirming your email...");
           // @ts-expect-error available at runtime in supabase-js v2
           await supabase.auth.exchangeCodeForSession({ code });
+          const { data } = await supabase.auth.getUser();
+          const user = data.user;
+          if (user) {
+            await supabase
+              .from("users")
+              .upsert({ id: user.id, email: user.email ?? "" })
+              .select("id")
+              .single();
+            // Redirect to intended page after confirmation
+            router.replace(redirect);
+            return;
+          }
         } catch {
-          // ignore
+          setStatus("Failed to confirm email. Please try again.");
+          setIsError(true);
         }
       }
 
+      // Check if already signed in
       const { data } = await supabase.auth.getUser();
       const user = data.user;
       if (user) {
-        // Upsert profile
         await supabase
           .from("users")
           .upsert({ id: user.id, email: user.email ?? "" })
@@ -58,7 +89,7 @@ export default function LoginPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const signInWithGoogle = async () => {
+  const signUpWithGoogle = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -68,12 +99,12 @@ export default function LoginPage() {
       });
       if (error) {
         setStatus(
-          mapAuthError(error.message || "Failed to sign in with Google")
+          mapAuthError(error.message || "Failed to sign up with Google")
         );
         setIsError(true);
       }
     } catch {
-      setStatus("Failed to sign in with Google");
+      setStatus("Failed to sign up with Google");
       setIsError(true);
     }
   };
@@ -84,38 +115,54 @@ export default function LoginPage() {
     setStatus("");
     setIsError(false);
     try {
-      // If password provided, prefer email+password auth
       if (password) {
-        const { data: signInData, error: signInErr } =
-          await supabase.auth.signInWithPassword({
+        const { data: signUpData, error: signUpErr } =
+          await supabase.auth.signUp({
             email,
             password,
+            options: {
+              emailRedirectTo: `${window.location.origin}${redirect}`,
+            },
           });
-        if (signInErr) {
-          setStatus(mapAuthError(signInErr.message || "Failed to sign in."));
+        if (signUpErr) {
+          setStatus(mapAuthError(signUpErr.message || "Failed to sign up"));
           setIsError(true);
           return;
         }
-        const user = signInData.user;
-        if (user) {
+        // If session returned, sign-in is complete
+        if (signUpData.session && signUpData.user) {
           await supabase
             .from("users")
-            .upsert({ id: user.id, email: user.email ?? "" })
+            .upsert({
+              id: signUpData.user.id,
+              email: signUpData.user.email ?? "",
+            })
             .select("id")
             .single();
           router.replace(redirect);
           return;
         }
+        // No session = email confirmation required
+        if (signUpData.user && !signUpData.session) {
+          setStatus(
+            "Please check your email and click the confirmation link to complete signup."
+          );
+          setIsError(false);
+          return;
+        }
       } else {
-        // Fallback: magic link
         const redirectTo = `${
           window.location.origin
-        }/login?redirect=${encodeURIComponent(redirect)}`;
+        }/signup?redirect=${encodeURIComponent(redirect)}`;
         const { error } = await supabase.auth.signInWithOtp({
           email,
           options: { emailRedirectTo: redirectTo, shouldCreateUser: true },
         });
-        if (error) throw error;
+        if (error) {
+          setStatus(mapAuthError(error.message || "Failed to send magic link"));
+          setIsError(true);
+          return;
+        }
         setStatus("Check your email for the magic link.");
         setIsError(false);
       }
@@ -123,11 +170,9 @@ export default function LoginPage() {
       const message = ((): string => {
         if (typeof err === "object" && err !== null && "message" in err) {
           const m = (err as { message?: unknown }).message;
-          return typeof m === "string"
-            ? mapAuthError(m)
-            : "Failed to send magic link";
+          return typeof m === "string" ? m : "Failed to sign up";
         }
-        return "Failed to send magic link";
+        return "Failed to sign up";
       })();
       setStatus(message);
       setIsError(true);
@@ -141,7 +186,7 @@ export default function LoginPage() {
     setClosing(true);
     window.setTimeout(() => {
       const openedFrom = search.get("from");
-      if (openedFrom === "logout") {
+      if (openedFrom === "login") {
         router.push("/");
         return;
       }
@@ -155,13 +200,13 @@ export default function LoginPage() {
 
   return (
     <main className="relative min-h-screen w-full px-6 py-14 sm:py-20 flex items-center justify-center">
-      {/* Backdrop overlay with blur */}
+      {/* Backdrop overlay with subtle blur */}
       <div
         className={`fixed inset-0 z-10 cursor-pointer bg-black/5 backdrop-blur-[1px] transition-opacity duration-200 ${
           closing ? "opacity-0" : "opacity-100"
         }`}
         onClick={navigateBack}
-        aria-label="Close login and go back"
+        aria-label="Close sign up and go back"
         role="button"
       />
 
@@ -182,10 +227,10 @@ export default function LoginPage() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-6 text-center">
-          <h1 className="font-display text-3xl font-semibold">Welcome back</h1>
-          <p className="mt-1 text-sm text-muted">
-            Sign in to continue your journey
-          </p>
+          <h1 className="font-display text-3xl font-semibold">
+            Create your account
+          </h1>
+          <p className="mt-1 text-sm text-muted">Join and start your journey</p>
         </div>
 
         <form onSubmit={submit} className="flex flex-col gap-3 w-full">
@@ -222,7 +267,7 @@ export default function LoginPage() {
             {loading
               ? "Please wait…"
               : password
-              ? "Sign in"
+              ? "Create account"
               : "Send a link to your email"}
           </button>
         </form>
@@ -250,7 +295,7 @@ export default function LoginPage() {
 
         <button
           type="button"
-          onClick={signInWithGoogle}
+          onClick={signUpWithGoogle}
           className="btn hover-lift-enhanced w-full h-11 rounded-lg bg-white text-gray-900 ring-1 ring-gray-300 hover:bg-gray-50 flex items-center justify-center gap-3 transition-all duration-200"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -271,16 +316,13 @@ export default function LoginPage() {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          Sign in with Google
+          Sign up with Google
         </button>
 
         <div className="mt-6 text-center text-sm text-muted">
-          New here?{" "}
-          <Link
-            href={`/signup?from=login&redirect=${encodeURIComponent(redirect)}`}
-            className="underline hover:no-underline"
-          >
-            Create an account
+          Have an account?{" "}
+          <Link href="/login" className="underline hover:no-underline">
+            Sign in
           </Link>
         </div>
       </div>

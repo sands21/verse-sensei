@@ -1,7 +1,25 @@
 import supabaseAdmin from "@/lib/supabaseAdmin";
+import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: Request) {
   try {
+    // Verify Supabase JWT from Authorization header if provided
+    const authHeader =
+      req.headers.get("authorization") || req.headers.get("Authorization");
+    let userId: string | null = null;
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.slice("Bearer ".length);
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
+      if (supabaseUrl) {
+        const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
+        const client = createClient(supabaseUrl, anon, {
+          auth: { persistSession: false },
+        });
+        const { data } = await client.auth.getUser(token);
+        userId = data.user?.id ?? null;
+      }
+    }
+
     const body = await req.json();
     const { conversationId, text, characterId } = body || {};
     if (typeof text !== "string" || text.trim().length === 0) {
@@ -132,6 +150,8 @@ export async function POST(req: Request) {
             conversation_id: conversationId,
             sender: "ai",
             content: reply,
+            // associate message with user if we have it (optional)
+            ...(userId ? { user_id: userId } : {}),
           })
           .select("id")
           .single();
