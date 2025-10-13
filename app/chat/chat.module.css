@@ -1,0 +1,150 @@
+/* module scope only - keep empty rulesets out */
+
+.v0ChatWrapper {
+  /* Scope v0 chat variables to this wrapper only */
+  --background: oklch(0.03 0 0);
+  --foreground: oklch(0.95 0 0);
+  --card: oklch(0.11 0 0);
+  --card-foreground: oklch(0.95 0 0);
+  --popover: oklch(0.17 0 0);
+  --popover-foreground: oklch(0.95 0 0);
+  --primary: oklch(0.22 0 0);
+  --primary-foreground: oklch(0.95 0 0);
+  --secondary: oklch(0.18 0 0);
+  --secondary-foreground: oklch(0.95 0 0);
+  --muted: oklch(0.22 0 0);
+  --muted-foreground: oklch(0.6 0 0);
+  --accent: oklch(0.28 0 0);
+  --accent-foreground: oklch(0.95 0 0);
+  --destructive: oklch(0.5 0.2 25);
+  --destructive-foreground: oklch(0.95 0 0);
+  --border: oklch(0.26 0 0);
+  --input: oklch(0.1 0 0);
+  --ring: oklch(0.55 0 0);
+  --radius: 0.75rem;
+  --sidebar: oklch(0.04 0 0);
+  --sidebar-foreground: oklch(0.95 0 0);
+  --sidebar-primary: oklch(0.12 0 0);
+  --sidebar-primary-foreground: oklch(0.95 0 0);
+  --sidebar-accent: oklch(0.08 0 0);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(0.12 0 0);
+  --sidebar-ring: oklch(0.3 0 0);
+
+  /* Tailwind v4 token mappings used by utilities like bg-card, bg-popover, ring-ring, etc. */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Base application of background/text for isolated area */
+  background: var(--background);
+  color: var(--foreground);
+  position: relative;
+  z-index: 2; /* ensure chat renders above global page overlays */
+}
+
+.fillViewport {
+  min-height: 100vh;
+}
+
+/* Match v0 base: default border/outline colors for all descendants */
+.v0ChatWrapper * {
+  border-color: var(--border);
+  outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
+}
+
+/* Scoped scrollbar utilities from v0 */
+.v0ChatWrapper .scroll-ghostbar {
+  scrollbar-width: none;
+}
+.v0ChatWrapper .scroll-ghostbar:hover,
+.v0ChatWrapper .scroll-ghostbar.scrolling {
+  scrollbar-width: thin;
+}
+.v0ChatWrapper .scroll-ghostbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+.v0ChatWrapper .scroll-ghostbar:hover::-webkit-scrollbar,
+.v0ChatWrapper .scroll-ghostbar.scrolling::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.v0ChatWrapper .scroll-ghostbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.v0ChatWrapper .scroll-ghostbar::-webkit-scrollbar-thumb {
+  background: oklch(0.26 0 0 / 0.55);
+  border-radius: 9999px;
+}
+.v0ChatWrapper .scroll-ghostbar:hover::-webkit-scrollbar-thumb,
+.v0ChatWrapper .scroll-ghostbar.scrolling::-webkit-scrollbar-thumb {
+  background: oklch(0.28 0 0 / 0.8);
+}
+
+.v0ChatWrapper .thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.26 0 0 / 0.6) transparent;
+}
+.v0ChatWrapper .thin-scrollbar:hover {
+  scrollbar-color: oklch(0.28 0 0 / 0.8) transparent;
+}
+.v0ChatWrapper .thin-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.v0ChatWrapper .thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.v0ChatWrapper .thin-scrollbar::-webkit-scrollbar-thumb {
+  background: oklch(0.26 0 0 / 0.6);
+  border-radius: 9999px;
+}
+.v0ChatWrapper .thin-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: oklch(0.28 0 0 / 0.8);
+}
+
+/* Scoped v0 enter animations used by ChatMessages */
+@keyframes v0-enter {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.v0ChatWrapper .animate-in.fade-in.slide-in-from-bottom-4 {
+  animation-name: v0-enter;
+  animation-fill-mode: both;
+  animation-timing-function: ease;
+}

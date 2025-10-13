@@ -1,21 +1,15 @@
-import ChatScreen from "./ChatScreen";
-import SignOutButton from "../components/SignOutButton";
-import SelectionPanel from "../components/SelectionPanel";
+"use client";
 import AuthGuard from "../components/AuthGuard";
+import styles from "./chat.module.css";
+import { ChatInterface } from "./v0/chat-interface";
 
 export default function ChatPage() {
   return (
     <AuthGuard>
-      <div className="min-h-[80vh] max-w-2xl mx-auto w-full p-6 flex flex-col gap-4">
-        <header className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-white">Chat</h1>
-          <span className="text-xs text-white/50">/chat</span>
-          <SignOutButton />
-        </header>
-        <div className="w-full max-w-2xl mx-auto">
-          <SelectionPanel />
-        </div>
-        <ChatScreen />
+      <div
+        className={"dark " + styles.v0ChatWrapper + " " + styles.fillViewport}
+      >
+        <ChatInterface />
       </div>
     </AuthGuard>
   );
