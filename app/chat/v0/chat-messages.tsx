@@ -24,6 +24,31 @@ export function ChatMessages({ messages, isTyping }: ChatMessagesProps) {
     });
   };
 
+  // Minimal, safe markdown renderer: **bold**, *italic*, `code`, line breaks
+  const renderMarkdown = (text: string) => {
+    const escapeHtml = (s: string) =>
+      s
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+
+    let html = escapeHtml(text);
+    // Inline code first to avoid conflicts
+    html = html.replace(
+      /`([^`]+)`/g,
+      '<code class="px-1 py-0.5 rounded bg-[oklch(0.11_0_0)] border border-border/70">$1</code>'
+    );
+    // Bold
+    html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    // Italic (single asterisks, not part of bold)
+    html = html.replace(/(^|[^*])\*([^*]+)\*/g, "$1<em>$2</em>");
+    // Line breaks
+    html = html.replace(/\n/g, "<br />");
+    return { __html: html };
+  };
+
   return (
     <div className="h-full overflow-y-auto p-6 space-y-6">
       <div className="max-w-4xl mx-auto">
@@ -64,16 +89,13 @@ export function ChatMessages({ messages, isTyping }: ChatMessagesProps) {
               <div
                 className={cn(
                   "rounded-2xl px-5 py-3 shadow-lg",
-                  "border backdrop-blur-sm",
+                  "border backdrop-blur-sm break-words",
                   message.role === "user"
                     ? "bg-primary/90 border-primary/50 text-primary-foreground shadow-primary/20"
                     : "bg-card/90 border-accent text-card-foreground shadow-black/30"
                 )}
-              >
-                <p className="text-sm leading-relaxed text-pretty">
-                  {message.content}
-                </p>
-              </div>
+                dangerouslySetInnerHTML={renderMarkdown(message.content)}
+              />
               <span className="text-xs text-muted-foreground mt-1.5 px-2">
                 {formatTime(message.timestamp)}
               </span>

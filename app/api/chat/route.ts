@@ -95,6 +95,17 @@ export async function POST(req: Request) {
     const openrouterKey = process.env.OPENROUTER_API_KEY;
     const openrouterModel = process.env.OPENROUTER_MODEL;
     let reply = `Got it: ${text.slice(0, 200)}`;
+    let usedFallback = false;
+
+    const cleanModelOutput = (raw: string | null | undefined): string => {
+      if (!raw) return "";
+      let s = raw;
+      s = s.replace(/<\|[^>]*\|>/g, ""); // remove meta tokens like <|begin_of_sentence|>
+      s = s.replace(/\bbegin__of__sentence\b|\bend__of__sentence\b/gi, "");
+      s = s.replace(/\s*\|\s*>?\s*$/g, "");
+      s = s.replace(/[\t\x0B\f\r]+/g, " ");
+      return s.trim();
+    };
 
     if (openrouterKey) {
       const systemParts: string[] = [];
@@ -102,11 +113,24 @@ export async function POST(req: Request) {
         systemParts.push(
           `You are ${persona.characterName}${
             persona.universeName ? ` from ${persona.universeName}` : ""
-          }. Reply in-character.`
+          }.
+          ROLEPLAY STRICTLY in first person as this character. Stay fully in character.
+          Use their voice, tone, slang, catchphrases, and worldview. Do not mention that you are an AI.
+          If asked non-canon things, respond how the character plausibly would without breaking character.
+          Keep responses concise with short paragraphs; use *italics* via asterisks for actions (e.g., *smiles*).
+          Do not include any meta markers like <|begin_of_sentence|> or system messages.`
         );
       if (personaConfig)
         systemParts.push(
-          `Persona config: ${JSON.stringify(personaConfig).slice(0, 4000)}`
+          `Persona profile (use faithfully): ${JSON.stringify(
+            personaConfig
+          ).slice(0, 6000)}
+
+          When explaining complex topics:
+          - Match the character's intelligence level (0–10).
+          - Prefer examples from their knowledge_scope.
+          - Follow explain_guidelines exactly.
+          - If outside scope, say so in-character, then attempt a simple analogy using their world terms.`
         );
       const systemPrompt = systemParts.join("\n\n");
 
@@ -135,9 +159,19 @@ export async function POST(req: Request) {
         );
         if (res.ok) {
           const json = await res.json();
-          reply = json?.choices?.[0]?.message?.content ?? reply;
+          reply =
+            cleanModelOutput(json?.choices?.[0]?.message?.content) || reply;
+        } else {
+          usedFallback = true;
+          const errText = await res.text().catch(() => "");
+          console.error("OpenRouter error", res.status, errText);
         }
-      } catch {}
+      } catch (e) {
+        usedFallback = true;
+        console.error("OpenRouter request failed", e);
+      }
+    } else {
+      usedFallback = true; // no key
     }
 
     // Persist AI reply if conversationId is provided, and capture id
@@ -163,10 +197,11 @@ export async function POST(req: Request) {
       JSON.stringify({
         ok: true,
         conversationId: conversationId ?? null,
-        reply,
+        reply: cleanModelOutput(reply),
         persona,
         historyCount,
         aiMessageId,
+        usedFallback,
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
