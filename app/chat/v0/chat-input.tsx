@@ -6,24 +6,10 @@ import { Send, ChevronDown, Search, Sparkles, Globe } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverTrigger, PopoverContent } from "./ui/popover";
+import supabase from "@/lib/supabaseClient";
 
-const UNIVERSES = [
-  { id: "marvel", name: "Marvel", icon: "🦸" },
-  { id: "dc", name: "DC", icon: "🦇" },
-  { id: "star-wars", name: "Star Wars", icon: "⚔️" },
-  { id: "harry-potter", name: "Harry Potter", icon: "🪄" },
-  { id: "lotr", name: "Lord of the Rings", icon: "💍" },
-];
-
-const CHARACTERS = [
-  { id: "iron-man", name: "Iron Man", universe: "Marvel", avatar: "🤖" },
-  { id: "spider-man", name: "Spider-Man", universe: "Marvel", avatar: "🕷️" },
-  { id: "thor", name: "Thor", universe: "Marvel", avatar: "⚡" },
-  { id: "batman", name: "Batman", universe: "DC", avatar: "🦇" },
-  { id: "superman", name: "Superman", universe: "DC", avatar: "🔵" },
-  { id: "luke", name: "Luke Skywalker", universe: "Star Wars", avatar: "⚔️" },
-  { id: "vader", name: "Darth Vader", universe: "Star Wars", avatar: "😈" },
-];
+type UniverseRow = { id: string; name: string };
+type CharacterRow = { id: string; name: string; universe_id: string };
 
 interface ChatInputProps {
   selectedUniverse: string;
@@ -46,15 +32,62 @@ export function ChatInput({
   const [universeSearch, setUniverseSearch] = useState("");
   const [characterSearch, setCharacterSearch] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [universes, setUniverses] = useState<UniverseRow[]>([]);
+  const [characters, setCharacters] = useState<CharacterRow[]>([]);
 
-  const filteredUniverses = UNIVERSES.filter((u) =>
+  // Load universes once
+  useEffect(() => {
+    const loadUniverses = async () => {
+      const { data } = await supabase
+        .from("universes")
+        .select("id, name")
+        .order("name", { ascending: true });
+      setUniverses(data || []);
+    };
+    loadUniverses();
+  }, []);
+
+  const loadCharactersForUniverse = async (universeId: string) => {
+    const { data, error } = await supabase
+      .from("characters")
+      .select("id, name, universe_id")
+      .eq("universe_id", universeId)
+      .order("name", { ascending: true });
+    if (error) {
+      console.error("Failed to load characters:", error.message);
+      setCharacters([]);
+      return [] as CharacterRow[];
+    }
+    const list = data || [];
+    setCharacters(list);
+    return list;
+  };
+
+  // Load characters when selectedUniverse changes
+  useEffect(() => {
+    if (!selectedUniverse) return;
+    const match = universes.find((u) => u.name === selectedUniverse);
+    if (match) {
+      loadCharactersForUniverse(match.id);
+    } else {
+      // Fallback: lookup by name if universes not yet loaded
+      (async () => {
+        const { data: uni } = await supabase
+          .from("universes")
+          .select("id")
+          .eq("name", selectedUniverse)
+          .single();
+        if (uni) await loadCharactersForUniverse(uni.id);
+      })();
+    }
+  }, [selectedUniverse, universes]);
+
+  const filteredUniverses = universes.filter((u) =>
     u.name.toLowerCase().includes(universeSearch.toLowerCase())
   );
 
-  const filteredCharacters = CHARACTERS.filter(
-    (c) =>
-      c.universe === selectedUniverse &&
-      c.name.toLowerCase().includes(characterSearch.toLowerCase())
+  const filteredCharacters = characters.filter((c) =>
+    c.name.toLowerCase().includes(characterSearch.toLowerCase())
   );
 
   const handleSend = () => {
@@ -174,6 +207,15 @@ export function ChatInput({
                       key={universe.id}
                       onClick={() => {
                         onUniverseChange(universe.name);
+                        // Auto-load characters and set a sensible default character
+                        (async () => {
+                          const list = await loadCharactersForUniverse(
+                            universe.id
+                          );
+                          if (list.length > 0) {
+                            onCharacterChange(list[0].name);
+                          }
+                        })();
                         setIsUniverseOpen(false);
                         setUniverseSearch("");
                         textareaRef.current?.focus();
@@ -186,7 +228,6 @@ export function ChatInput({
                           : "!bg-transparent hover:!bg-[oklch(0.15_0_0)]"
                       )}
                     >
-                      <span className="text-2xl">{universe.icon}</span>
                       <span className="font-medium text-foreground">
                         {universe.name}
                       </span>
@@ -250,29 +291,34 @@ export function ChatInput({
                   </div>
                 </div>
                 <div className="max-h-64 overflow-y-auto px-2 py-2 bg-[oklch(0.11_0_0)]">
-                  {filteredCharacters.map((character) => (
-                    <button
-                      key={character.id}
-                      onClick={() => {
-                        onCharacterChange(character.name);
-                        setIsCharacterOpen(false);
-                        setCharacterSearch("");
-                        textareaRef.current?.focus();
-                      }}
-                      className={cn(
-                        "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm",
-                        "transition-colors duration-200",
-                        selectedCharacter === character.name
-                          ? "!bg-[oklch(0.20_0_0)]"
-                          : "!bg-transparent hover:!bg-[oklch(0.15_0_0)]"
-                      )}
-                    >
-                      <span className="text-2xl">{character.avatar}</span>
-                      <span className="font-medium text-foreground">
-                        {character.name}
-                      </span>
-                    </button>
-                  ))}
+                  {filteredCharacters.length === 0 ? (
+                    <div className="px-3 py-6 text-sm text-muted-foreground/80">
+                      No characters found.
+                    </div>
+                  ) : (
+                    filteredCharacters.map((character) => (
+                      <button
+                        key={character.id}
+                        onClick={() => {
+                          onCharacterChange(character.name);
+                          setIsCharacterOpen(false);
+                          setCharacterSearch("");
+                          textareaRef.current?.focus();
+                        }}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm",
+                          "transition-colors duration-200",
+                          selectedCharacter === character.name
+                            ? "!bg-[oklch(0.20_0_0)]"
+                            : "!bg-transparent hover:!bg-[oklch(0.15_0_0)]"
+                        )}
+                      >
+                        <span className="font-medium text-foreground">
+                          {character.name}
+                        </span>
+                      </button>
+                    ))
+                  )}
                 </div>
               </PopoverContent>
             </Popover>

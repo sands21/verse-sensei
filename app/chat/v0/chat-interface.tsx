@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChatSidebar } from "./chat-sidebar";
 import { ChatMessages } from "./chat-messages";
 import { ChatInput } from "./chat-input";
 import { cn } from "@/lib/utils";
+import supabase from "@/lib/supabaseClient";
 
 export interface Message {
   id: string;
@@ -22,40 +23,234 @@ export interface ChatHistory {
 
 export function ChatInterface() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [selectedUniverse, setSelectedUniverse] = useState("Marvel");
-  const [selectedCharacter, setSelectedCharacter] = useState("Iron Man");
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      content: "Hello! I'm Iron Man. How can I assist you today?",
-      role: "assistant",
-      timestamp: new Date(Date.now() - 5000),
-    },
-  ]);
+  const [selectedUniverse, setSelectedUniverse] = useState("");
+  const [selectedCharacter, setSelectedCharacter] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [characterId, setCharacterId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  const handleSendMessage = (content: string) => {
-    const newMessage: Message = {
-      id: Date.now().toString(),
+  // Get current user
+  useEffect(() => {
+    const getUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUserId(user?.id ?? null);
+    };
+    getUser();
+  }, []);
+
+  // Initialize default universe/character from DB if none selected
+  useEffect(() => {
+    const initDefaults = async () => {
+      if (selectedUniverse) return;
+      const { data: universes } = await supabase
+        .from("universes")
+        .select("id, name")
+        .order("name", { ascending: true })
+        .limit(1);
+      const firstUniverse = universes?.[0];
+      if (!firstUniverse) return;
+      setSelectedUniverse(firstUniverse.name);
+
+      const { data: chars } = await supabase
+        .from("characters")
+        .select("name")
+        .eq("universe_id", firstUniverse.id)
+        .order("name", { ascending: true })
+        .limit(1);
+      const firstChar = chars?.[0];
+      if (firstChar) setSelectedCharacter(firstChar.name);
+    };
+    initDefaults();
+  }, [selectedUniverse]);
+
+  // Fetch character ID when character/universe changes
+  useEffect(() => {
+    const fetchCharacter = async () => {
+      if (!selectedCharacter || !selectedUniverse) return;
+
+      const { data: universe } = await supabase
+        .from("universes")
+        .select("id")
+        .eq("name", selectedUniverse)
+        .single();
+
+      if (universe) {
+        const { data: character } = await supabase
+          .from("characters")
+          .select("id, name")
+          .eq("name", selectedCharacter)
+          .eq("universe_id", universe.id)
+          .single();
+
+        if (character) {
+          setCharacterId(character.id);
+          // Load initial greeting
+          setMessages([
+            {
+              id: "greeting",
+              content: `Hello! I'm ${selectedCharacter}. How can I assist you today?`,
+              role: "assistant",
+              timestamp: new Date(),
+            },
+          ]);
+        }
+      }
+    };
+
+    fetchCharacter();
+  }, [selectedCharacter, selectedUniverse]);
+
+  const handleSendMessage = async (content: string) => {
+    if (!content.trim()) return;
+
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
       content,
       role: "user",
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, newMessage]);
-
-    // Simulate AI response
+    setMessages((prev) => [...prev, userMessage]);
     setIsTyping(true);
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        content: `As ${selectedCharacter} from the ${selectedUniverse} universe, I appreciate your message. This is a simulated response demonstrating the chat interface.`,
+
+    try {
+      // Create or use existing conversation
+      let convId = conversationId;
+      if (!convId && userId && characterId) {
+        const { data: newConv } = await supabase
+          .from("conversations")
+          .insert({
+            user_id: userId,
+            character_id: characterId,
+          })
+          .select("id")
+          .single();
+
+        convId = newConv?.id ?? null;
+        setConversationId(convId);
+      }
+
+      // Save user message
+      if (convId) {
+        await supabase.from("messages").insert({
+          conversation_id: convId,
+          sender: "user",
+          content,
+          user_id: userId,
+        });
+      }
+
+      // Get auth token for API
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      // Call chat API
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          text: content,
+          conversationId: convId,
+          characterId: characterId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.ok && data.reply) {
+        const aiMessage: Message = {
+          id: data.aiMessageId || `ai-${Date.now()}`,
+          content: data.reply,
+          role: "assistant",
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, aiMessage]);
+      } else {
+        throw new Error(data.error || "Failed to get response");
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        content: "Sorry, I couldn't process your message. Please try again.",
         role: "assistant",
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, aiResponse]);
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
+  };
+
+  const handleSelectConversation = async (convId: string) => {
+    setConversationId(convId);
+    setIsTyping(true);
+
+    try {
+      // Load conversation messages
+      const { data: msgs } = await supabase
+        .from("messages")
+        .select("id, content, sender, timestamp")
+        .eq("conversation_id", convId)
+        .order("timestamp", { ascending: true });
+
+      if (msgs) {
+        const loadedMessages: Message[] = msgs.map((msg) => ({
+          id: msg.id,
+          content: msg.content,
+          role:
+            msg.sender === "user" ? ("user" as const) : ("assistant" as const),
+          timestamp: new Date(msg.timestamp),
+        }));
+        setMessages(loadedMessages);
+      }
+
+      // Load conversation character
+      const { data: convo } = await supabase
+        .from("conversations")
+        .select("character_id")
+        .eq("id", convId)
+        .single();
+
+      if (convo?.character_id) {
+        setCharacterId(convo.character_id);
+
+        // Fetch character details
+        const { data: character } = await supabase
+          .from("characters")
+          .select("name, universe_id")
+          .eq("id", convo.character_id)
+          .single();
+
+        if (character) {
+          setSelectedCharacter(character.name);
+
+          // Fetch universe details
+          const { data: universe } = await supabase
+            .from("universes")
+            .select("name")
+            .eq("id", character.universe_id)
+            .single();
+
+          if (universe) {
+            setSelectedUniverse(universe.name);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error loading conversation:", error);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   return (
@@ -64,6 +259,8 @@ export function ChatInterface() {
       <ChatSidebar
         isOpen={isSidebarOpen}
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+        onSelectConversation={handleSelectConversation}
+        activeConversationId={conversationId}
       />
 
       {/* Main Chat Area */}
