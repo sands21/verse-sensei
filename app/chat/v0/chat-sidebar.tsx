@@ -77,7 +77,7 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
         size="icon"
         onClick={onToggle}
         className={cn(
-          "fixed top-4 z-50 transition-all duration-300 bg-card/80 backdrop-blur-sm border border-border hover:bg-card",
+          "fixed top-4 z-50 transition-all duration-300 !bg-[oklch(0.11_0_0)] border border-border/70 hover:!bg-[oklch(0.15_0_0)]",
           isOpen ? "left-[calc(25%-1rem)] lg:left-[calc(25%-1rem)]" : "left-4"
         )}
       >
@@ -91,7 +91,7 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed lg:relative h-full bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out z-40",
+          "fixed lg:relative h-full bg-[oklch(0.04_0_0)] border-r border-border/70 transition-all duration-300 ease-in-out z-40",
           "flex flex-col",
           isOpen ? "w-[280px] lg:w-[25%]" : "w-0 lg:w-0"
         )}
@@ -103,8 +103,8 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
           )}
         >
           {/* Header */}
-          <div className="p-6 border-b border-sidebar-border">
-            <h2 className="text-xl font-semibold text-sidebar-foreground">
+          <div className="p-6 border-b border-border/70 bg-[oklch(0.04_0_0)]">
+            <h2 className="text-xl font-semibold text-foreground">
               Chat History
             </h2>
           </div>
@@ -112,19 +112,18 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
           {/* Chat List */}
           <div
             className={cn(
-              "flex-1 overflow-y-auto p-3 space-y-2 thin-scrollbar"
+              "flex-1 overflow-y-auto px-2 py-3 thin-scrollbar bg-[oklch(0.04_0_0)]"
             )}
           >
             {DUMMY_CHATS.map((chat, index) => (
               <button
                 key={chat.id}
                 className={cn(
-                  "w-full text-left p-3 rounded-lg transition-all duration-200",
-                  "bg-sidebar-accent/50 hover:bg-sidebar-accent border border-transparent",
-                  "hover:border-sidebar-border hover:shadow-lg hover:shadow-black/20",
-                  "group relative overflow-hidden",
-                  index === 0 &&
-                    "border-sidebar-primary shadow-lg shadow-sidebar-primary/10"
+                  "w-full text-left p-3 rounded-xl transition-colors duration-200",
+                  "group relative mb-2",
+                  index === 0
+                    ? "!bg-[oklch(0.20_0_0)]"
+                    : "!bg-transparent hover:!bg-[oklch(0.15_0_0)]"
                 )}
               >
                 <div className="flex items-start gap-3">
@@ -132,7 +131,7 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
                     <MessageSquare className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-sm text-sidebar-foreground truncate mb-1">
+                    <h3 className="font-medium text-sm text-foreground truncate mb-1">
                       {chat.title}
                     </h3>
                     <p className="text-xs text-muted-foreground truncate">
@@ -143,9 +142,6 @@ export function ChatSidebar({ isOpen, onToggle }: ChatSidebarProps) {
                     </p>
                   </div>
                 </div>
-
-                {/* Subtle glow effect on hover */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-sidebar-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </button>
             ))}
           </div>

@@ -151,11 +151,12 @@ export function ChatInput({
                 side="top"
                 sideOffset={12}
                 className={cn(
-                  "p-0 z-50 w-[min(320px,calc(var(--radix-popover-trigger-width)+120px))] rounded-xl",
-                  "bg-popover shadow-2xl shadow-black/60 overflow-hidden"
+                  "p-0 z-50 w-[min(320px,calc(var(--radix-popover-trigger-width)+120px))] rounded-2xl",
+                  "bg-[oklch(0.11_0_0)] border border-border/70",
+                  "shadow-[0_8px_28px_rgba(0,0,0,0.35)] overflow-hidden"
                 )}
               >
-                <div className="p-3 border-b border-border/70 bg-card/70">
+                <div className="p-4 border-b border-border/70 bg-[oklch(0.11_0_0)]">
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <input
@@ -163,11 +164,11 @@ export function ChatInput({
                       placeholder="Search universes..."
                       value={universeSearch}
                       onChange={(e) => setUniverseSearch(e.target.value)}
-                      className="w-full pl-10 pr-3 py-2 bg-input/60 rounded-lg text-sm focus:outline-none text-foreground placeholder:text-muted-foreground shadow-inner shadow-black/20"
+                      className="w-full pl-10 pr-3 py-2 bg-[oklch(0.08_0_0)] rounded-lg text-sm focus:outline-none text-foreground placeholder:text-muted-foreground shadow-inner shadow-black/20"
                     />
                   </div>
                 </div>
-                <div className="max-h-64 overflow-y-auto p-2 bg-popover">
+                <div className="max-h-64 overflow-y-auto px-2 py-2 bg-[oklch(0.11_0_0)]">
                   {filteredUniverses.map((universe) => (
                     <button
                       key={universe.id}
@@ -178,10 +179,11 @@ export function ChatInput({
                         textareaRef.current?.focus();
                       }}
                       className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-sm",
-                        "hover:bg-accent/70 transition-all duration-150",
-                        selectedUniverse === universe.name &&
-                          "bg-accent/60 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.2)]"
+                        "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm",
+                        "transition-colors duration-200",
+                        selectedUniverse === universe.name
+                          ? "!bg-[oklch(0.20_0_0)]"
+                          : "!bg-transparent hover:!bg-[oklch(0.15_0_0)]"
                       )}
                     >
                       <span className="text-2xl">{universe.icon}</span>
@@ -230,11 +232,12 @@ export function ChatInput({
                 side="top"
                 sideOffset={12}
                 className={cn(
-                  "p-0 z-50 w-[min(360px,calc(var(--radix-popover-trigger-width)+160px))] rounded-xl",
-                  "bg-popover shadow-2xl shadow-black/60 overflow-hidden"
+                  "p-0 z-50 w-[min(360px,calc(var(--radix-popover-trigger-width)+160px))] rounded-2xl",
+                  "bg-[oklch(0.11_0_0)] border border-border/70",
+                  "shadow-[0_8px_28px_rgba(0,0,0,0.35)] overflow-hidden"
                 )}
               >
-                <div className="p-3 border-b border-border/70 bg-card/70">
+                <div className="p-4 border-b border-border/70 bg-[oklch(0.11_0_0)]">
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <input
@@ -242,11 +245,11 @@ export function ChatInput({
                       placeholder="Search characters..."
                       value={characterSearch}
                       onChange={(e) => setCharacterSearch(e.target.value)}
-                      className="w-full pl-10 pr-3 py-2 bg-input/60 rounded-lg text-sm focus:outline-none text-foreground placeholder:text-muted-foreground shadow-inner shadow-black/20"
+                      className="w-full pl-10 pr-3 py-2 bg-[oklch(0.08_0_0)] rounded-lg text-sm focus:outline-none text-foreground placeholder:text-muted-foreground shadow-inner shadow-black/20"
                     />
                   </div>
                 </div>
-                <div className="max-h-64 overflow-y-auto p-2 bg-popover">
+                <div className="max-h-64 overflow-y-auto px-2 py-2 bg-[oklch(0.11_0_0)]">
                   {filteredCharacters.map((character) => (
                     <button
                       key={character.id}
@@ -257,10 +260,11 @@ export function ChatInput({
                         textareaRef.current?.focus();
                       }}
                       className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-sm",
-                        "hover:bg-accent/70 transition-all duration-150",
-                        selectedCharacter === character.name &&
-                          "bg-accent/60 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.2)]"
+                        "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm",
+                        "transition-colors duration-200",
+                        selectedCharacter === character.name
+                          ? "!bg-[oklch(0.20_0_0)]"
+                          : "!bg-transparent hover:!bg-[oklch(0.15_0_0)]"
                       )}
                     >
                       <span className="text-2xl">{character.avatar}</span>
