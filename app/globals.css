@@ -131,8 +131,7 @@ button {
 
 /* Typography: display font for big headings */
 .font-display {
-  font-family: var(--font-bebas), "Bebas Neue", system-ui, -apple-system,
-    sans-serif;
+  font-family: var(--font-chubbo), system-ui, -apple-system, sans-serif;
   letter-spacing: 0.02em;
 }
 

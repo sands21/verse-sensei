@@ -116,12 +116,13 @@ export function ChatInput({
 
   return (
     <div className="bg-transparent">
-      <div className="max-w-4xl mx-auto p-4 md:p-6">
+      <div className="max-w-3xl mx-auto p-4 md:p-6">
         <div
           className={cn(
             "relative rounded-2xl bg-background/95 backdrop-blur-sm",
-            "border border-accent/70",
-            "shadow-[0_8px_28px_rgba(0,0,0,0.35)]",
+            "border-2 border-accent/70",
+            // soft ambient glow plus depth shadow
+            "shadow-[0_10px_36px_rgba(0,0,0,0.45),0_0_24px_rgba(255,122,69,0.06)]",
             "px-3 md:px-4 py-3"
           )}
           aria-label="Message composer"
@@ -221,7 +222,7 @@ export function ChatInput({
                         textareaRef.current?.focus();
                       }}
                       className={cn(
-                        "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm",
+                        "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm cursor-pointer",
                         "transition-colors duration-200",
                         selectedUniverse === universe.name
                           ? "!bg-[oklch(0.20_0_0)]"
@@ -306,7 +307,7 @@ export function ChatInput({
                           textareaRef.current?.focus();
                         }}
                         className={cn(
-                          "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm",
+                          "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm cursor-pointer",
                           "transition-colors duration-200",
                           selectedCharacter === character.name
                             ? "!bg-[oklch(0.20_0_0)]"

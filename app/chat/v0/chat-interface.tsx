@@ -6,6 +6,7 @@ import { ChatMessages } from "./chat-messages";
 import { ChatInput } from "./chat-input";
 import { cn } from "@/lib/utils";
 import supabase from "@/lib/supabaseClient";
+import { motion, AnimatePresence } from "framer-motion";
 
 export interface Message {
   id: string;
@@ -30,6 +31,19 @@ export function ChatInterface() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [characterId, setCharacterId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>("");
+
+  // Close sidebar by default on mobile, open on lg+
+  useEffect(() => {
+    const updateSidebarForViewport = () => {
+      if (typeof window !== "undefined") {
+        setIsSidebarOpen(window.innerWidth >= 1024); // lg breakpoint
+      }
+    };
+    updateSidebarForViewport();
+    window.addEventListener("resize", updateSidebarForViewport);
+    return () => window.removeEventListener("resize", updateSidebarForViewport);
+  }, []);
 
   // Get current user
   useEffect(() => {
@@ -38,6 +52,13 @@ export function ChatInterface() {
         data: { user },
       } = await supabase.auth.getUser();
       setUserId(user?.id ?? null);
+      // Extract first name from email or use full email
+      if (user?.email) {
+        const emailName = user.email.split("@")[0];
+        const capitalizedName =
+          emailName.charAt(0).toUpperCase() + emailName.slice(1);
+        setUserName(capitalizedName);
+      }
     };
     getUser();
   }, []);
@@ -88,15 +109,7 @@ export function ChatInterface() {
 
         if (character) {
           setCharacterId(character.id);
-          // Load initial greeting
-          setMessages([
-            {
-              id: "greeting",
-              content: `Hello! I'm ${selectedCharacter}. How can I assist you today?`,
-              role: "assistant",
-              timestamp: new Date(),
-            },
-          ]);
+          // Don't load greeting - show empty state instead
         }
       }
     };
@@ -253,36 +266,94 @@ export function ChatInterface() {
     }
   };
 
+  const handleNewChat = async () => {
+    setConversationId(null);
+    setMessages([]);
+
+    // Re-fetch character ID for current selection
+    if (selectedCharacter && selectedUniverse) {
+      const { data: universe } = await supabase
+        .from("universes")
+        .select("id")
+        .eq("name", selectedUniverse)
+        .single();
+
+      if (universe) {
+        const { data: character } = await supabase
+          .from("characters")
+          .select("id, name")
+          .eq("name", selectedCharacter)
+          .eq("universe_id", universe.id)
+          .single();
+
+        if (character) {
+          setCharacterId(character.id);
+          // Don't load greeting - show empty state instead
+        }
+      }
+    }
+  };
+
+  const handlePromptClick = (prompt: string) => {
+    handleSendMessage(prompt);
+  };
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      {/* Mobile backdrop blur when sidebar open */}
+      {!isSidebarOpen ? null : (
+        <div
+          className="fixed inset-0 z-30 lg:hidden bg-black/40 backdrop-blur-sm"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
       {/* Sidebar */}
       <ChatSidebar
         isOpen={isSidebarOpen}
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
         onSelectConversation={handleSelectConversation}
         activeConversationId={conversationId}
+        onNewChat={handleNewChat}
       />
 
       {/* Main Chat Area */}
       <main
         className={cn(
           "flex flex-col flex-1 transition-all duration-300 ease-in-out",
+          "bg-[oklch(0.15_0_0)]",
           isSidebarOpen ? "lg:ml-0" : "ml-0"
         )}
       >
-        {/* Messages Area */}
-        <div className="flex-1 overflow-hidden">
-          <ChatMessages messages={messages} isTyping={isTyping} />
-        </div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={conversationId || characterId || "empty"}
+            initial={{ opacity: 0, y: 8, scale: 0.995 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.995 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            className="flex flex-col h-full"
+          >
+            {/* Messages Area */}
+            <div className="flex-1 overflow-hidden">
+              <ChatMessages
+                messages={messages}
+                isTyping={isTyping}
+                userName={userName}
+                characterName={selectedCharacter}
+                onPromptClick={handlePromptClick}
+              />
+            </div>
 
-        {/* Input Area */}
-        <ChatInput
-          selectedUniverse={selectedUniverse}
-          selectedCharacter={selectedCharacter}
-          onUniverseChange={setSelectedUniverse}
-          onCharacterChange={setSelectedCharacter}
-          onSendMessage={handleSendMessage}
-        />
+            {/* Input Area */}
+            <ChatInput
+              selectedUniverse={selectedUniverse}
+              selectedCharacter={selectedCharacter}
+              onUniverseChange={setSelectedUniverse}
+              onCharacterChange={setSelectedCharacter}
+              onSendMessage={handleSendMessage}
+            />
+          </motion.div>
+        </AnimatePresence>
       </main>
     </div>
   );

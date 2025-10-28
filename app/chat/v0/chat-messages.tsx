@@ -4,18 +4,39 @@ import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import type { Message } from "./chat-interface";
 import { Bot, User } from "lucide-react";
+import { ChatEmptyState } from "./chat-empty-state";
 
 interface ChatMessagesProps {
   messages: Message[];
   isTyping: boolean;
+  userName?: string;
+  characterName?: string;
+  onPromptClick?: (prompt: string) => void;
 }
 
-export function ChatMessages({ messages, isTyping }: ChatMessagesProps) {
+export function ChatMessages({
+  messages,
+  isTyping,
+  userName,
+  characterName,
+  onPromptClick,
+}: ChatMessagesProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
+
+  // Show empty state if no messages
+  if (messages.length === 0 && !isTyping) {
+    return (
+      <ChatEmptyState
+        userName={userName}
+        characterName={characterName}
+        onPromptClick={onPromptClick || (() => {})}
+      />
+    );
+  }
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString("en-US", {

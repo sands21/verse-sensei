@@ -216,11 +216,13 @@ export default function LandingPage() {
         <p className="fade-in-up text-xs uppercase tracking-widest text-muted">
           A fun way to learn
         </p>
-        <h1 className="hero-headline mt-3 max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl md:text-6xl font-display">
+        <h1
+          className="hero-headline mt-3 max-w-3xl text-4xl font-extrabold leading-tight sm:text-5xl md:text-6xl font-display"
+          // style={{ letterSpacing: "-0.04em" }}
+        >
           <span className="line line-1">Think like your heroes</span>
           <br />
-          {/* <span className="line line-2">Physics by Yoda, DSA by Goku </span> */}
-          {/* <br /> */}
+
           <span className="line line-3 gradient-text whitespace-nowrap">
             Complex ideas, their way
           </span>
