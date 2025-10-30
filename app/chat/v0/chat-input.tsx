@@ -7,6 +7,7 @@ import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverTrigger, PopoverContent } from "./ui/popover";
 import supabase from "@/lib/supabaseClient";
+import { motion, AnimatePresence } from "framer-motion";
 
 type UniverseRow = { id: string; name: string };
 type CharacterRow = { id: string; name: string; universe_id: string };
@@ -189,52 +190,77 @@ export function ChatInput({
                   "bg-[oklch(0.11_0_0)] border border-border/70",
                   "shadow-[0_8px_28px_rgba(0,0,0,0.35)] overflow-hidden"
                 )}
+                asChild
               >
-                <div className="p-4 border-b border-border/70 bg-[oklch(0.11_0_0)]">
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <input
-                      type="text"
-                      placeholder="Search universes..."
-                      value={universeSearch}
-                      onChange={(e) => setUniverseSearch(e.target.value)}
-                      className="w-full pl-10 pr-3 py-2 bg-[oklch(0.08_0_0)] rounded-lg text-sm focus:outline-none text-foreground placeholder:text-muted-foreground shadow-inner shadow-black/20"
-                    />
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                  transition={{
+                    duration: 0.2,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
+                >
+                  <div className="p-4 border-b border-border/70 bg-[oklch(0.11_0_0)]">
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-2 top-3 h-4 w-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        placeholder="Search universes..."
+                        value={universeSearch}
+                        onChange={(e) => setUniverseSearch(e.target.value)}
+                        className={cn(
+                          "w-full pl-8 pr-3 py-2 pb-3 text-sm",
+                          "!bg-transparent border-none",
+                          "outline-none text-foreground placeholder:text-muted-foreground",
+                          "transition-colors duration-200"
+                        )}
+                      />
+                      <div className="h-[2px] bg-border/60 absolute bottom-0 left-0 right-0" />
+                    </div>
                   </div>
-                </div>
-                <div className="max-h-64 overflow-y-auto px-2 py-2 bg-[oklch(0.11_0_0)]">
-                  {filteredUniverses.map((universe) => (
-                    <button
-                      key={universe.id}
-                      onClick={() => {
-                        onUniverseChange(universe.name);
-                        // Auto-load characters and set a sensible default character
-                        (async () => {
-                          const list = await loadCharactersForUniverse(
-                            universe.id
-                          );
-                          if (list.length > 0) {
-                            onCharacterChange(list[0].name);
-                          }
-                        })();
-                        setIsUniverseOpen(false);
-                        setUniverseSearch("");
-                        textareaRef.current?.focus();
-                      }}
-                      className={cn(
-                        "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm cursor-pointer",
-                        "transition-colors duration-200",
-                        selectedUniverse === universe.name
-                          ? "!bg-[oklch(0.20_0_0)]"
-                          : "!bg-transparent hover:!bg-[oklch(0.15_0_0)]"
-                      )}
-                    >
-                      <span className="font-medium text-foreground">
-                        {universe.name}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+                  <div className="max-h-64 overflow-y-auto px-2 py-2 bg-[oklch(0.11_0_0)]">
+                    {filteredUniverses.map((universe, index) => (
+                      <motion.button
+                        key={universe.id}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -8 }}
+                        transition={{
+                          duration: 0.15,
+                          delay: index * 0.02,
+                          ease: [0.16, 1, 0.3, 1],
+                        }}
+                        onClick={() => {
+                          onUniverseChange(universe.name);
+                          // Auto-load characters and set a sensible default character
+                          (async () => {
+                            const list = await loadCharactersForUniverse(
+                              universe.id
+                            );
+                            if (list.length > 0) {
+                              onCharacterChange(list[0].name);
+                            }
+                          })();
+                          setIsUniverseOpen(false);
+                          setUniverseSearch("");
+                          textareaRef.current?.focus();
+                        }}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm cursor-pointer",
+                          "transition-colors duration-200",
+                          selectedUniverse === universe.name
+                            ? "!bg-[oklch(0.20_0_0)]"
+                            : "!bg-transparent hover:!bg-[oklch(0.15_0_0)]"
+                        )}
+                      >
+                        <span className="font-medium text-foreground">
+                          {universe.name}
+                        </span>
+                      </motion.button>
+                    ))}
+                  </div>
+                </motion.div>
               </PopoverContent>
             </Popover>
 
@@ -278,49 +304,82 @@ export function ChatInput({
                   "bg-[oklch(0.11_0_0)] border border-border/70",
                   "shadow-[0_8px_28px_rgba(0,0,0,0.35)] overflow-hidden"
                 )}
+                asChild
               >
-                <div className="p-4 border-b border-border/70 bg-[oklch(0.11_0_0)]">
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <input
-                      type="text"
-                      placeholder="Search characters..."
-                      value={characterSearch}
-                      onChange={(e) => setCharacterSearch(e.target.value)}
-                      className="w-full pl-10 pr-3 py-2 bg-[oklch(0.08_0_0)] rounded-lg text-sm focus:outline-none text-foreground placeholder:text-muted-foreground shadow-inner shadow-black/20"
-                    />
-                  </div>
-                </div>
-                <div className="max-h-64 overflow-y-auto px-2 py-2 bg-[oklch(0.11_0_0)]">
-                  {filteredCharacters.length === 0 ? (
-                    <div className="px-3 py-6 text-sm text-muted-foreground/80">
-                      No characters found.
-                    </div>
-                  ) : (
-                    filteredCharacters.map((character) => (
-                      <button
-                        key={character.id}
-                        onClick={() => {
-                          onCharacterChange(character.name);
-                          setIsCharacterOpen(false);
-                          setCharacterSearch("");
-                          textareaRef.current?.focus();
-                        }}
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                  transition={{
+                    duration: 0.2,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
+                >
+                  <div className="p-4 border-b border-border/70 bg-[oklch(0.11_0_0)]">
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-2 top-3 h-4 w-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        placeholder="Search characters..."
+                        value={characterSearch}
+                        onChange={(e) => setCharacterSearch(e.target.value)}
                         className={cn(
-                          "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm cursor-pointer",
-                          "transition-colors duration-200",
-                          selectedCharacter === character.name
-                            ? "!bg-[oklch(0.20_0_0)]"
-                            : "!bg-transparent hover:!bg-[oklch(0.15_0_0)]"
+                          "w-full pl-8 pr-3 py-2 pb-3 text-sm",
+                          "!bg-transparent border-none",
+                          "outline-none text-foreground placeholder:text-muted-foreground",
+                          "transition-colors duration-200"
                         )}
-                      >
-                        <span className="font-medium text-foreground">
-                          {character.name}
-                        </span>
-                      </button>
-                    ))
-                  )}
-                </div>
+                      />
+                      <div className="h-[2px] bg-border/60 absolute bottom-0 left-0 right-0" />
+                    </div>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto px-2 py-2 bg-[oklch(0.11_0_0)]">
+                    <AnimatePresence mode="wait">
+                      {filteredCharacters.length === 0 ? (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.15 }}
+                          className="px-3 py-6 text-sm text-muted-foreground/80"
+                        >
+                          No characters found.
+                        </motion.div>
+                      ) : (
+                        filteredCharacters.map((character, index) => (
+                          <motion.button
+                            key={character.id}
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -8 }}
+                            transition={{
+                              duration: 0.15,
+                              delay: index * 0.02,
+                              ease: [0.16, 1, 0.3, 1],
+                            }}
+                            onClick={() => {
+                              onCharacterChange(character.name);
+                              setIsCharacterOpen(false);
+                              setCharacterSearch("");
+                              textareaRef.current?.focus();
+                            }}
+                            className={cn(
+                              "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-sm cursor-pointer",
+                              "transition-colors duration-200",
+                              selectedCharacter === character.name
+                                ? "!bg-[oklch(0.20_0_0)]"
+                                : "!bg-transparent hover:!bg-[oklch(0.15_0_0)]"
+                            )}
+                          >
+                            <span className="font-medium text-foreground">
+                              {character.name}
+                            </span>
+                          </motion.button>
+                        ))
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
               </PopoverContent>
             </Popover>
           </div>

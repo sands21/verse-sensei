@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import type { Message } from "./chat-interface";
-import { Bot, User } from "lucide-react";
 import { ChatEmptyState } from "./chat-empty-state";
 
 interface ChatMessagesProps {
@@ -77,30 +76,10 @@ export function ChatMessages({
           <div
             key={message.id}
             className={cn(
-              "flex gap-4 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500",
-              message.role === "user" ? "flex-row-reverse" : "flex-row"
+              "flex mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500",
+              message.role === "user" ? "justify-end" : "justify-start"
             )}
           >
-            {/* Avatar */}
-            <div className="flex-shrink-0">
-              <div
-                className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center",
-                  "border-2 shadow-lg",
-                  message.role === "user"
-                    ? "bg-primary border-primary/50 shadow-primary/20"
-                    : "bg-card border-accent shadow-accent/20"
-                )}
-              >
-                {message.role === "user" ? (
-                  <User className="h-5 w-5 text-primary-foreground" />
-                ) : (
-                  <Bot className="h-5 w-5 text-foreground" />
-                )}
-              </div>
-            </div>
-
-            {/* Message Content */}
             <div
               className={cn(
                 "flex flex-col max-w-[70%]",
@@ -109,15 +88,14 @@ export function ChatMessages({
             >
               <div
                 className={cn(
-                  "rounded-2xl px-5 py-3 shadow-lg",
-                  "border backdrop-blur-sm break-words",
+                  "break-words leading-relaxed",
                   message.role === "user"
-                    ? "bg-primary/90 border-primary/50 text-primary-foreground shadow-primary/20"
-                    : "bg-card/90 border-accent text-card-foreground shadow-black/30"
+                    ? "rounded-2xl px-5 py-3 bg-[oklch(0.24_0_0)] text-foreground/95 shadow-sm"
+                    : "text-foreground/95"
                 )}
                 dangerouslySetInnerHTML={renderMarkdown(message.content)}
               />
-              <span className="text-xs text-muted-foreground mt-1.5 px-2">
+              <span className="text-xs text-muted-foreground mt-1.5">
                 {formatTime(message.timestamp)}
               </span>
             </div>
@@ -126,18 +104,11 @@ export function ChatMessages({
 
         {/* Typing Indicator */}
         {isTyping && (
-          <div className="flex gap-4 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <div className="flex-shrink-0">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-card border-2 border-accent shadow-lg shadow-accent/20">
-                <Bot className="h-5 w-5 text-foreground" />
-              </div>
-            </div>
-            <div className="flex items-center px-5 py-3 bg-card/90 border border-accent rounded-2xl shadow-lg shadow-black/30 backdrop-blur-sm">
-              <div className="flex gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-foreground/50 animate-bounce [animation-delay:-0.3s]" />
-                <div className="w-2 h-2 rounded-full bg-foreground/50 animate-bounce [animation-delay:-0.15s]" />
-                <div className="w-2 h-2 rounded-full bg-foreground/50 animate-bounce" />
-              </div>
+          <div className="flex justify-start mb-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div className="flex items-center gap-1.5 px-3 py-2 text-muted-foreground">
+              <div className="w-2 h-2 rounded-full bg-muted animate-bounce [animation-delay:-0.3s]" />
+              <div className="w-2 h-2 rounded-full bg-muted animate-bounce [animation-delay:-0.15s]" />
+              <div className="w-2 h-2 rounded-full bg-muted animate-bounce" />
             </div>
           </div>
         )}

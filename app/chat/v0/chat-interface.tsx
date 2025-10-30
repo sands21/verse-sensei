@@ -52,8 +52,14 @@ export function ChatInterface() {
         data: { user },
       } = await supabase.auth.getUser();
       setUserId(user?.id ?? null);
-      // Extract first name from email or use full email
-      if (user?.email) {
+
+      // Extract first name from Google metadata, or fall back to email
+      if (user?.user_metadata?.full_name) {
+        // Get first name from full name
+        const firstName = user.user_metadata.full_name.split(" ")[0];
+        setUserName(firstName);
+      } else if (user?.email) {
+        // Fall back to email-based name
         const emailName = user.email.split("@")[0];
         const capitalizedName =
           emailName.charAt(0).toUpperCase() + emailName.slice(1);

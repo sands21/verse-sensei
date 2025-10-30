@@ -1,13 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  MessageSquare,
-  Search,
-  Plus,
-  PanelLeft,
-  User as UserIcon,
-} from "lucide-react";
+import Image from "next/image";
+import { Search, Plus, PanelLeft, User as UserIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatHistory } from "./chat-interface";
 import supabase from "@/lib/supabaseClient";
@@ -27,9 +22,13 @@ export function ChatSidebar({
   activeConversationId,
   onNewChat,
 }: ChatSidebarProps) {
-  const [conversations, setConversations] = useState<ChatHistory[]>([]);
+  const [conversations, setConversations] = useState<
+    (ChatHistory & { pinned?: boolean })[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [modalSearchQuery, setModalSearchQuery] = useState("");
@@ -41,7 +40,27 @@ export function ChatSidebar({
         const {
           data: { user },
         } = await supabase.auth.getUser();
+
         setUserEmail(user?.email ?? null);
+        setUserName(user?.user_metadata?.full_name ?? null);
+
+        type Identity = {
+          provider?: string;
+          identity_data?: { picture?: string | null } | null;
+        };
+        const identities = (user?.identities as Identity[] | undefined) || [];
+        const identityGoogle = identities.find((i) => i?.provider === "google");
+
+        const meta = user?.user_metadata as
+          | { avatar_url?: string; picture?: string }
+          | undefined;
+        const avatarCandidate =
+          meta?.avatar_url ||
+          meta?.picture ||
+          identityGoogle?.identity_data?.picture ||
+          null;
+
+        setUserAvatar(avatarCandidate ?? null);
         if (!user) return;
 
         const { data: convos } = await supabase
@@ -49,19 +68,23 @@ export function ChatSidebar({
           .select(
             `
             id,
-            created_at,
-            character_id
+            started_at,
+            character_id,
+            pinned,
+            archived
           `
           )
           .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
+          .eq("archived", false)
+          .order("pinned", { ascending: false })
+          .order("started_at", { ascending: false })
           .limit(20);
 
         if (convos) {
-          const formattedConvos: ChatHistory[] = [];
+          const formattedConvos: (ChatHistory & { pinned?: boolean })[] = [];
 
           for (const convo of convos) {
-            // Fetch character name
+            // Fetch character name (fallback label)
             const { data: character } = await supabase
               .from("characters")
               .select("name")
@@ -71,22 +94,28 @@ export function ChatSidebar({
             // Fetch messages for this conversation
             const { data: messages } = await supabase
               .from("messages")
-              .select("content, timestamp")
+              .select("content, timestamp, sender")
               .eq("conversation_id", convo.id)
               .order("timestamp", { ascending: true });
 
             const lastMsg = messages?.[messages.length - 1];
-            const firstUserMsg = messages?.find((m) => m.content);
+            const firstUserMsg = messages?.find(
+              (m) => m.sender === "user" && m.content
+            );
+            const firstLine = firstUserMsg?.content
+              ? String(firstUserMsg.content).replace(/\s+/g, " ").trim()
+              : `Chat with ${character?.name || "Character"}`;
 
             formattedConvos.push({
               id: convo.id,
-              title:
-                firstUserMsg?.content?.slice(0, 50) ||
-                `Chat with ${character?.name || "Character"}`,
-              lastMessage: lastMsg?.content?.slice(0, 60) || "New conversation",
+              title: firstLine,
+              lastMessage: "", // not shown in UI anymore
               timestamp: new Date(
-                lastMsg?.timestamp || convo.created_at || Date.now()
+                (lastMsg?.timestamp as string | undefined) ||
+                  (convo.started_at as string) ||
+                  Date.now()
               ),
+              pinned: (convo as { pinned?: boolean }).pinned === true,
             });
           }
 
@@ -103,19 +132,6 @@ export function ChatSidebar({
       loadConversations();
     }
   }, [isOpen]);
-
-  const formatTimestamp = (date: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString();
-  };
 
   return (
     <>
@@ -232,11 +248,6 @@ export function ChatSidebar({
               "flex-1 overflow-y-auto px-2 py-3 thin-scrollbar bg-[oklch(0.04_0_0)]"
             )}
           >
-            <div className="px-2 pb-2">
-              <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                Last 30 Days
-              </span>
-            </div>
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <p className="text-sm text-muted-foreground">
@@ -250,41 +261,110 @@ export function ChatSidebar({
                 </p>
               </div>
             ) : (
-              conversations
-                .filter((c) =>
+              (() => {
+                const filtered = conversations.filter((c) =>
                   c.title.toLowerCase().includes(searchQuery.toLowerCase())
-                )
-                .map((chat) => (
-                  <button
-                    key={chat.id}
-                    onClick={() => onSelectConversation?.(chat.id)}
-                    className={cn(
-                      "w-full text-left rounded-lg transition-all duration-200 cursor-pointer",
-                      "group relative mb-2 py-2.5 px-4",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border/70",
-                      activeConversationId === chat.id
-                        ? "!bg-[oklch(0.20_0_0)] border border-border/70 shadow-sm"
-                        : "!bg-transparent hover:!bg-[oklch(0.15_0_0)] border border-transparent active:scale-[0.99]"
-                    )}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="mt-1 flex-shrink-0">
-                        <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                );
+                const startOfToday = new Date();
+                startOfToday.setHours(0, 0, 0, 0);
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+                const todayItems = filtered
+                  .filter((c) => c.timestamp >= startOfToday)
+                  .sort(
+                    (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+                  );
+                const last30Items = filtered
+                  .filter(
+                    (c) =>
+                      c.timestamp < startOfToday && c.timestamp >= thirtyDaysAgo
+                  )
+                  .sort(
+                    (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+                  );
+
+                const Section = ({
+                  title,
+                  items,
+                }: {
+                  title: string;
+                  items: typeof filtered;
+                }) =>
+                  items.length === 0 ? null : (
+                    <div className="mb-3">
+                      <div className="px-3 pb-2">
+                        <span className="text-xs text-muted-foreground">
+                          {title}
+                        </span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-sm text-foreground truncate mb-1">
-                          {chat.title}
-                        </h3>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {chat.lastMessage}
-                        </p>
-                        <p className="text-xs text-muted-foreground/70 mt-1">
-                          {formatTimestamp(chat.timestamp)}
-                        </p>
-                      </div>
+                      {items.map((chat) => (
+                        <div key={chat.id} className="relative group/item">
+                          <button
+                            onClick={() => onSelectConversation?.(chat.id)}
+                            className={cn(
+                              "w-full text-left transition-all duration-200 cursor-pointer",
+                              "relative py-2 px-4 pr-1 rounded-lg",
+                              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border/70",
+                              activeConversationId === chat.id
+                                ? "!bg-[oklch(0.18_0_0)]"
+                                : "!bg-transparent group-hover/item:!bg-[oklch(0.16_0_0)]"
+                            )}
+                          >
+                            <div className="min-w-0">
+                              <h3 className="font-medium text-sm text-foreground truncate whitespace-nowrap">
+                                {chat.title}
+                              </h3>
+                            </div>
+                          </button>
+                          <div
+                            className={cn(
+                              "absolute right-3 top-[50%] -translate-y-1/2 flex items-center",
+                              "opacity-0 translate-x-2 group-hover/item:translate-x-0 group-hover/item:opacity-100",
+                              "transition-all duration-200"
+                            )}
+                          >
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  await supabase
+                                    .from("conversations")
+                                    .update({ archived: true })
+                                    .eq("id", chat.id);
+                                  setConversations((prev) =>
+                                    prev.filter((c) => c.id !== chat.id)
+                                  );
+                                } catch (err) {
+                                  console.error(
+                                    "Failed to close conversation",
+                                    err
+                                  );
+                                }
+                              }}
+                              aria-label="Close conversation"
+                              className={cn(
+                                "inline-flex h-7 w-7 items-center justify-center rounded-md",
+                                "!bg-transparent text-muted-foreground cursor-pointer",
+                                "hover:!bg-[oklch(0.25_0_0)]",
+                                "transition-colors"
+                              )}
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </button>
-                ))
+                  );
+
+                return (
+                  <>
+                    <Section title="Today" items={todayItems} />
+                    <Section title="Last 30 Days" items={last30Items} />
+                  </>
+                );
+              })()
             )}
           </div>
 
@@ -295,18 +375,28 @@ export function ChatSidebar({
                 className={cn(
                   "w-full flex items-center gap-3 text-left",
                   "rounded-xl px-4 py-3",
-                  "bg-[oklch(0.06_0_0)] border border-border/70",
+                  "bg-[oklch(0.06_0_0)]",
                   "shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer",
                   "hover:bg-[oklch(0.08_0_0)]",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border/70"
                 )}
               >
-                <div className="h-8 w-8 rounded-full bg-[oklch(0.11_0_0)] border border-border/70 flex items-center justify-center shadow-md">
-                  <UserIcon className="h-4 w-4 text-muted-foreground" />
-                </div>
+                {userAvatar ? (
+                  <Image
+                    src={userAvatar}
+                    alt={userName || "User"}
+                    width={32}
+                    height={32}
+                    className="h-8 w-8 rounded-full border border-border/70 shadow-md object-cover"
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-[oklch(0.11_0_0)] border border-border/70 flex items-center justify-center shadow-md">
+                    <UserIcon className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">
-                    {userEmail || "Signed out"}
+                    {userName || userEmail || "Signed out"}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
                     Free plan
