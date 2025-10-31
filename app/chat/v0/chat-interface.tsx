@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { ChatSidebar } from "./chat-sidebar";
 import { ChatMessages } from "./chat-messages";
 import { ChatInput } from "./chat-input";
@@ -32,6 +33,8 @@ export function ChatInterface() {
   const [characterId, setCharacterId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
+  const search = useSearchParams();
+  const [preselectApplied, setPreselectApplied] = useState(false);
 
   // Close sidebar by default on mobile, open on lg+
   useEffect(() => {
@@ -69,9 +72,20 @@ export function ChatInterface() {
     getUser();
   }, []);
 
-  // Initialize default universe/character from DB if none selected
+  // Apply URL preselection once on mount
+  useEffect(() => {
+    const urlUniverse = search.get("universe");
+    const urlCharacter = search.get("character");
+    if (urlUniverse) setSelectedUniverse(urlUniverse);
+    if (urlCharacter) setSelectedCharacter(urlCharacter);
+    setPreselectApplied(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Initialize default universe/character from DB if none provided
   useEffect(() => {
     const initDefaults = async () => {
+      if (!preselectApplied) return;
       if (selectedUniverse) return;
       const { data: universes } = await supabase
         .from("universes")
@@ -92,7 +106,32 @@ export function ChatInterface() {
       if (firstChar) setSelectedCharacter(firstChar.name);
     };
     initDefaults();
-  }, [selectedUniverse]);
+  }, [preselectApplied, selectedUniverse]);
+
+  // When a universe is selected (e.g., via URL), ensure a default character is selected
+  useEffect(() => {
+    const ensureCharacterForUniverse = async () => {
+      if (!preselectApplied) return;
+      if (!selectedUniverse) return;
+      if (selectedCharacter) return;
+
+      const { data: universe } = await supabase
+        .from("universes")
+        .select("id")
+        .eq("name", selectedUniverse)
+        .single();
+      if (!universe) return;
+      const { data: chars } = await supabase
+        .from("characters")
+        .select("name")
+        .eq("universe_id", universe.id)
+        .order("name", { ascending: true })
+        .limit(1);
+      const firstChar = chars?.[0];
+      if (firstChar) setSelectedCharacter(firstChar.name);
+    };
+    ensureCharacterForUniverse();
+  }, [preselectApplied, selectedUniverse, selectedCharacter]);
 
   // Fetch character ID when character/universe changes
   useEffect(() => {
@@ -357,6 +396,7 @@ export function ChatInterface() {
               onUniverseChange={setSelectedUniverse}
               onCharacterChange={setSelectedCharacter}
               onSendMessage={handleSendMessage}
+              isUniverseLocked={messages.length > 0 || !!conversationId}
             />
           </motion.div>
         </AnimatePresence>

@@ -18,6 +18,7 @@ interface ChatInputProps {
   onUniverseChange: (universe: string) => void;
   onCharacterChange: (character: string) => void;
   onSendMessage: (message: string) => void;
+  isUniverseLocked?: boolean;
 }
 
 export function ChatInput({
@@ -26,6 +27,7 @@ export function ChatInput({
   onUniverseChange,
   onCharacterChange,
   onSendMessage,
+  isUniverseLocked = false,
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const [isUniverseOpen, setIsUniverseOpen] = useState(false);
@@ -151,8 +153,9 @@ export function ChatInput({
             aria-label="Selectors"
           >
             <Popover
-              open={isUniverseOpen}
+              open={isUniverseOpen && !isUniverseLocked}
               onOpenChange={(o) => {
+                if (isUniverseLocked) return;
                 setIsUniverseOpen(o);
                 if (o) setIsCharacterOpen(false);
               }}
@@ -163,12 +166,21 @@ export function ChatInput({
                   aria-expanded={isUniverseOpen}
                   aria-controls="universe-combobox-list"
                   role="combobox"
+                  disabled={isUniverseLocked}
                   className={cn(
                     "inline-flex items-center gap-2 rounded-full",
                     "px-2.5 py-1 text-xs md:text-sm font-medium",
                     "bg-secondary hover:bg-secondary/90 transition-colors",
-                    "shadow-sm shadow-black/30 focus-visible:outline-none focus-visible:ring-0"
+                    "shadow-sm shadow-black/30 focus-visible:outline-none focus-visible:ring-0",
+                    !isUniverseLocked && "cursor-pointer",
+                    isUniverseLocked &&
+                      "opacity-50 cursor-not-allowed pointer-events-auto"
                   )}
+                  title={
+                    isUniverseLocked
+                      ? "Start a new chat to change universe"
+                      : undefined
+                  }
                 >
                   <Globe className="h-4 w-4 text-muted-foreground" />
                   <span className="text-foreground">{selectedUniverse}</span>
@@ -281,7 +293,8 @@ export function ChatInput({
                     "inline-flex items-center gap-2 rounded-full",
                     "px-2.5 py-1 text-xs md:text-sm font-medium",
                     "bg-secondary hover:bg-secondary/90 transition-colors",
-                    "shadow-sm shadow-black/30 focus-visible:outline-none focus-visible:ring-0"
+                    "shadow-sm shadow-black/30 focus-visible:outline-none focus-visible:ring-0",
+                    "cursor-pointer"
                   )}
                 >
                   <Sparkles className="h-4 w-4 text-muted-foreground" />

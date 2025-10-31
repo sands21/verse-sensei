@@ -6,6 +6,8 @@ import { Search, Plus, PanelLeft, User as UserIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatHistory } from "./chat-interface";
 import supabase from "@/lib/supabaseClient";
+import SignOutButton from "../../components/SignOutButton";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface ChatSidebarProps {
   isOpen: boolean;
@@ -32,6 +34,7 @@ export function ChatSidebar({
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [modalSearchQuery, setModalSearchQuery] = useState("");
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   useEffect(() => {
     const loadConversations = async () => {
@@ -372,6 +375,7 @@ export function ChatSidebar({
           <div className="mt-auto sticky bottom-0 bg-[oklch(0.04_0_0)]">
             <div className="p-3">
               <button
+                onClick={() => setIsProfileModalOpen(true)}
                 className={cn(
                   "w-full flex items-center gap-3 text-left",
                   "rounded-xl px-4 py-3",
@@ -409,135 +413,221 @@ export function ChatSidebar({
       </aside>
 
       {/* Search Modal */}
-      {isSearchModalOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-start justify-center pt-20"
-          onClick={() => setIsSearchModalOpen(false)}
-        >
-          {/* Backdrop with blur */}
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-
-          {/* Modal */}
-          <div
-            className="relative w-full max-w-2xl mx-4 cursor-default"
-            onClick={(e) => e.stopPropagation()}
+      <AnimatePresence>
+        {isSearchModalOpen ? (
+          <motion.div
+            key="search-modal"
+            className="fixed inset-0 z-[100] flex items-start justify-center pt-20"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            onClick={() => setIsSearchModalOpen(false)}
           >
-            <div className="bg-[oklch(0.08_0_0)] rounded-2xl shadow-2xl overflow-hidden">
-              {/* Search Input */}
-              <div className="p-4">
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <input
-                    autoFocus
-                    value={modalSearchQuery}
-                    onChange={(e) => setModalSearchQuery(e.target.value)}
-                    placeholder="Search or press Enter to start new chat..."
-                    className={cn(
-                      "w-full pl-12 pr-4 py-3 text-base",
-                      "!bg-transparent !border-none appearance-none",
-                      "outline-none text-foreground placeholder:text-muted-foreground"
-                    )}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !modalSearchQuery.trim()) {
-                        setIsSearchModalOpen(false);
-                        onNewChat?.();
-                      }
-                    }}
-                  />
-                  <Plus className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                </div>
-              </div>
+            {/* Backdrop with blur */}
+            <motion.div
+              aria-hidden
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+            />
 
-              {/* Results */}
-              <div className="max-h-[60vh] overflow-y-auto">
-                {modalSearchQuery ? (
-                  <>
-                    <div className="px-4 py-3">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            {/* Modal */}
+            <motion.div
+              className="relative w-full max-w-2xl mx-4 cursor-default"
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              initial={{ opacity: 0, y: 8, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.98 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <div className="bg-[oklch(0.08_0_0)] rounded-2xl shadow-2xl overflow-hidden">
+                {/* Search Input */}
+                <div className="p-4">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <input
+                      autoFocus
+                      value={modalSearchQuery}
+                      onChange={(e) => setModalSearchQuery(e.target.value)}
+                      placeholder="Search or press Enter to start new chat..."
+                      className={cn(
+                        "w-full pl-12 pr-4 py-3 text-base",
+                        "!bg-transparent !border-none appearance-none",
+                        "outline-none text-foreground placeholder:text-muted-foreground"
+                      )}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !modalSearchQuery.trim()) {
+                          setIsSearchModalOpen(false);
+                          onNewChat?.();
+                        }
+                      }}
+                    />
+                    <Plus className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  </div>
+                </div>
+
+                {/* Results */}
+                <div className="max-h-[60vh] overflow-y-auto">
+                  {modalSearchQuery ? (
+                    <>
+                      <div className="px-4 py-3">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <div className="w-4 h-4 rounded-full border border-current flex items-center justify-center">
+                            <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                          </div>
+                          <span>Recent Chats</span>
+                        </div>
+                      </div>
+                      <div className="p-2">
+                        {conversations
+                          .filter((c) =>
+                            c.title
+                              .toLowerCase()
+                              .includes(modalSearchQuery.toLowerCase())
+                          )
+                          .slice(0, 5)
+                          .map((chat) => (
+                            <button
+                              key={chat.id}
+                              onClick={() => {
+                                onSelectConversation?.(chat.id);
+                                setIsSearchModalOpen(false);
+                                setModalSearchQuery("");
+                              }}
+                              className={cn(
+                                "w-full text-left rounded-lg transition-all duration-200 cursor-pointer",
+                                "py-3 px-3 mb-1",
+                                "hover:bg-[oklch(0.15_0_0)]",
+                                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border/70"
+                              )}
+                            >
+                              <h4 className="font-medium text-sm text-foreground mb-1">
+                                {chat.title}
+                              </h4>
+                              <p className="text-xs text-muted-foreground line-clamp-1">
+                                {chat.lastMessage}
+                              </p>
+                            </button>
+                          ))}
+                        {conversations.filter((c) =>
+                          c.title
+                            .toLowerCase()
+                            .includes(modalSearchQuery.toLowerCase())
+                        ).length === 0 && (
+                          <div className="py-8 px-4 text-center text-muted-foreground text-sm">
+                            No conversations found
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="p-4">
+                      <div className="px-4 py-3 mb-2 flex items-center gap-2 text-sm text-muted-foreground">
                         <div className="w-4 h-4 rounded-full border border-current flex items-center justify-center">
                           <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
                         </div>
                         <span>Recent Chats</span>
                       </div>
+                      {conversations.slice(0, 5).map((chat) => (
+                        <button
+                          key={chat.id}
+                          onClick={() => {
+                            onSelectConversation?.(chat.id);
+                            setIsSearchModalOpen(false);
+                          }}
+                          className={cn(
+                            "w-full text-left rounded-lg transition-all duration-200 cursor-pointer",
+                            "py-3 px-3 mb-1",
+                            "hover:bg-[oklch(0.15_0_0)]"
+                          )}
+                        >
+                          <h4 className="font-medium text-sm text-foreground mb-1">
+                            {chat.title}
+                          </h4>
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {chat.lastMessage}
+                          </p>
+                        </button>
+                      ))}
                     </div>
-                    <div className="p-2">
-                      {conversations
-                        .filter((c) =>
-                          c.title
-                            .toLowerCase()
-                            .includes(modalSearchQuery.toLowerCase())
-                        )
-                        .slice(0, 5)
-                        .map((chat) => (
-                          <button
-                            key={chat.id}
-                            onClick={() => {
-                              onSelectConversation?.(chat.id);
-                              setIsSearchModalOpen(false);
-                              setModalSearchQuery("");
-                            }}
-                            className={cn(
-                              "w-full text-left rounded-lg transition-all duration-200 cursor-pointer",
-                              "py-3 px-3 mb-1",
-                              "hover:bg-[oklch(0.15_0_0)]",
-                              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border/70"
-                            )}
-                          >
-                            <h4 className="font-medium text-sm text-foreground mb-1">
-                              {chat.title}
-                            </h4>
-                            <p className="text-xs text-muted-foreground line-clamp-1">
-                              {chat.lastMessage}
-                            </p>
-                          </button>
-                        ))}
-                      {conversations.filter((c) =>
-                        c.title
-                          .toLowerCase()
-                          .includes(modalSearchQuery.toLowerCase())
-                      ).length === 0 && (
-                        <div className="py-8 px-4 text-center text-muted-foreground text-sm">
-                          No conversations found
-                        </div>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <div className="p-4">
-                    <div className="px-4 py-3 mb-2 flex items-center gap-2 text-sm text-muted-foreground">
-                      <div className="w-4 h-4 rounded-full border border-current flex items-center justify-center">
-                        <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-                      </div>
-                      <span>Recent Chats</span>
-                    </div>
-                    {conversations.slice(0, 5).map((chat) => (
-                      <button
-                        key={chat.id}
-                        onClick={() => {
-                          onSelectConversation?.(chat.id);
-                          setIsSearchModalOpen(false);
-                        }}
-                        className={cn(
-                          "w-full text-left rounded-lg transition-all duration-200 cursor-pointer",
-                          "py-3 px-3 mb-1",
-                          "hover:bg-[oklch(0.15_0_0)]"
-                        )}
-                      >
-                        <h4 className="font-medium text-sm text-foreground mb-1">
-                          {chat.title}
-                        </h4>
-                        <p className="text-xs text-muted-foreground line-clamp-1">
-                          {chat.lastMessage}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      {/* Profile Modal */}
+      <AnimatePresence>
+        {isProfileModalOpen ? (
+          <motion.div
+            key="profile-modal"
+            className="fixed inset-0 z-[100] flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            onClick={() => setIsProfileModalOpen(false)}
+          >
+            <motion.div
+              aria-hidden
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+            />
+            <motion.div
+              className="relative w-full max-w-md mx-4 cursor-default"
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              initial={{ opacity: 0, y: 8, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.98 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <div className="bg-[oklch(0.08_0_0)] rounded-2xl shadow-2xl overflow-hidden">
+                <div className="p-6 flex items-center gap-4">
+                  {userAvatar ? (
+                    <Image
+                      src={userAvatar}
+                      alt={userName || "User"}
+                      width={56}
+                      height={56}
+                      className="h-14 w-14 rounded-full border border-border/70 shadow-md object-cover"
+                    />
+                  ) : (
+                    <div className="h-14 w-14 rounded-full bg-[oklch(0.11_0_0)] border border-border/70 flex items-center justify-center shadow-md">
+                      <UserIcon className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-base font-medium text-foreground truncate">
+                      {userName || userEmail || "Signed out"}
+                    </p>
+                    {userEmail && (
+                      <p className="text-sm text-muted-foreground truncate">
+                        {userEmail}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="px-6 pb-6 flex items-center justify-between">
+                  <div className="text-xs text-muted-foreground">Free plan</div>
+                  <SignOutButton />
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </>
   );
 }

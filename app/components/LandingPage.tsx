@@ -75,7 +75,7 @@ function LorePanelAndMap({ universes }: { universes: typeof UNIVERSES }) {
     : "A living galaxy of worlds";
   const tagline = displayedSlug
     ? active?.tagline || "Explore this world."
-    : "Hover the portals to feel their energy. Click and drag the universes to your liking :)";
+    : "Hover the portals to feel their energy.";
   const items =
     displayedSlug && active
       ? active.lore
@@ -113,7 +113,7 @@ function LorePanelAndMap({ universes }: { universes: typeof UNIVERSES }) {
             transform: phase === "out" ? "translateY(6px)" : "none",
           }}
         >
-          <h3 className="text-xl font-semibold mb-2">{title}</h3>
+          <h3 className="text-xl font-semibold mb-10">{title}</h3>
           <p className="text-sm text-muted">{tagline}</p>
           <ul className="mt-4 space-y-2 text-sm text-muted">
             {items.map((t, i) => (
