@@ -1,11 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import supabase from "@/lib/supabaseClient";
 
 export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupContent />
+    </Suspense>
+  );
+}
+
+function SignupContent() {
   const router = useRouter();
   const search = useSearchParams();
   const [email, setEmail] = useState("");

@@ -113,7 +113,9 @@ function LorePanelAndMap({ universes }: { universes: typeof UNIVERSES }) {
             transform: phase === "out" ? "translateY(6px)" : "none",
           }}
         >
-          <h3 className="text-xl font-semibold mb-10">{title}</h3>
+          <h3 className="text-base sm:text-lg md:text-xl font-semibold mb-10 leading-tight">
+            {title}
+          </h3>
           <p className="text-sm text-muted">{tagline}</p>
           <ul className="mt-4 space-y-2 text-sm text-muted">
             {items.map((t, i) => (
@@ -217,13 +219,13 @@ export default function LandingPage() {
           A fun way to learn
         </p>
         <h1
-          className="hero-headline mt-3 max-w-3xl text-4xl font-extrabold leading-tight sm:text-5xl md:text-6xl font-display"
+          className="hero-headline mt-3 max-w-3xl text-3xl font-extrabold leading-tight sm:text-5xl md:text-6xl font-display"
           // style={{ letterSpacing: "-0.04em" }}
         >
           <span className="line line-1">Think like your heroes</span>
           <br />
 
-          <span className="line line-3 gradient-text whitespace-nowrap">
+          <span className="line line-3 gradient-text sm:whitespace-nowrap">
             Complex ideas, their way
           </span>
         </h1>
