@@ -18,7 +18,7 @@ Choose from incredible universes:
 - **Attack on Titan** - Discuss courage and protecting what matters most
 - **Dragon Ball** - Learn about training hard and surpassing your limits
 - **Jujutsu Kaisen** - Explore themes of responsibility and inner strength
-- **Demon Slayer** - Talk about compassion and staying true to your values
+- **Demon Slayer** - Talk about compassion and staying true to your values <br>
 *More Incoming*
 
 ### 📱 **Beautiful & Easy to Use**
