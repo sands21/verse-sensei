@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import * as React from "react";
 import HeroCollage from "./HeroCollage";
 import HeroMotion from "./HeroMotion";
@@ -211,52 +212,109 @@ export default function LandingPage() {
       {/* Hero */}
       <section
         id="hero"
-        className="relative flex h-screen min-h-screen w-full flex-col items-center justify-center px-6 text-center sm:px-8 snap-start"
+        className="relative flex min-h-screen w-full items-center justify-center px-4 pt-24 pb-32 sm:pt-24 sm:pb-20 lg:pt-16 lg:pb-12 text-center sm:px-6 lg:px-4 snap-start"
       >
         <HeroMotion />
         <HeroCollage />
-        <p className="fade-in-up text-xs uppercase tracking-widest text-muted">
-          A fun way to learn
-        </p>
-        <h1
-          className="hero-headline mt-3 max-w-3xl text-3xl font-extrabold leading-tight sm:text-5xl md:text-6xl font-display"
-          // style={{ letterSpacing: "-0.04em" }}
-        >
-          <span className="line line-1">Think like your heroes</span>
-          <br />
+        <div className="relative z-10 flex w-full max-w-7xl flex-col items-center gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-center lg:pl-2 xl:pl-4">
+          {/* Left: copy & CTAs */}
+          <div className="flex flex-col items-center text-center lg:items-start lg:text-left lg:pr-8 lg:-mt-16">
+            <p className="fade-in-up text-xs uppercase tracking-widest text-muted">
+              A fun way to learn
+            </p>
+            <h1
+              className="hero-headline mt-3 max-w-2lg text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl lg:text-5xl font-display"
+              style={{ letterSpacing: "-0.03em" }}
+            >
+              <span className="line line-1">Think like your heroes</span>
+              <br />
+              <span className="line line-3 gradient-text sm:whitespace-nowrap">
+                Complex ideas, their way
+              </span>
+            </h1>
+            <h2
+              className="fade-in-up delay-2 mt-5 max-w-xl text-sm text-muted sm:text-base lg:text-base"
+              style={{
+                lineHeight: "1.65",
+                textShadow: "0 2px 4px rgba(0, 0, 0, 0.5)",
+              }}
+            >
+              Every character has unique wisdom and perspective. Unlock new ways
+              of understanding by learning from the minds you&apos;re already
+              drawn to. Choose any universe, pick any hero or villain, and
+              discover how they&apos;d explain the world&apos;s most fascinating
+              concepts
+            </h2>
 
-          <span className="line line-3 gradient-text sm:whitespace-nowrap">
-            Complex ideas, their way
-          </span>
-        </h1>
-        <h2
-          className="fade-in-up delay-2 mt-6 max-w-2xl text-base text-muted sm:text-lg"
-          style={{
-            lineHeight: "1.7",
-            textShadow: "0 2px 4px rgba(0, 0, 0, 0.5)",
-          }}
-        >
-          Every character has unique wisdom and perspective. Unlock new ways of
-          understanding by learning from the minds you&apos;re already drawn to.
-          Choose any universe, pick any hero or villain, and discover how
-          they&apos;d explain the world&apos;s most fascinating concepts
-        </h2>
+            {/* Mini highlight: Popular senseis this week */}
+            <div className="mt-6 w-full max-w-md">
+              <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted/80 text-center lg:text-left">
+                Popular senseis this week
+              </p>
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
+                <span className="inline-flex items-center rounded-full border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-[color-mix(in_oklab,var(--foreground)_4%,transparent)] px-3 py-1 text-[11px] text-muted/90">
+                  🍥 Naruto &middot; Focus &amp; grit
+                </span>
+                <span className="inline-flex items-center rounded-full border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-[color-mix(in_oklab,var(--foreground)_4%,transparent)] px-3 py-1 text-[11px] text-muted/90">
+                  ☠️ Luffy &middot; Curious freedom
+                </span>
+                <span className="inline-flex items-center rounded-full border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-[color-mix(in_oklab,var(--foreground)_4%,transparent)] px-3 py-1 text-[11px] text-muted/90">
+                  ⚔️ Mikasa &middot; Relentless resolve
+                </span>
+                <span className="inline-flex items-center rounded-full border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-[color-mix(in_oklab,var(--foreground)_4%,transparent)] px-3 py-1 text-[11px] text-muted/90">
+                  🐉 Goku &middot; Pushing past limits
+                </span>
+              </div>
+            </div>
 
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-5">
-          <Link
-            href="/chat"
-            className="btn btn-primary-glow hover-lift-enhanced rounded-full bg-[color-mix(in_oklab,var(--foreground)_8%,transparent)] px-8 py-3.5 text-base font-medium ring-1 ring-[color-mix(in_oklab,var(--foreground)_20%,transparent)] transition-all duration-200"
-            style={{ cursor: "pointer" }}
+            <div className="mt-16 flex flex-wrap items-center justify-center gap-4 lg:justify-start">
+              <Link
+                href="/chat"
+                className="btn btn-primary-glow hover-lift-enhanced rounded-full bg-[color-mix(in_oklab,var(--foreground)_8%,transparent)] px-8 py-3.5 text-base font-medium ring-1 ring-[color-mix(in_oklab,var(--foreground)_20%,transparent)] transition-all duration-200"
+                style={{ cursor: "pointer" }}
+              >
+                Pick Your Sensei
+              </Link>
+              <Link
+                href="/login"
+                className="btn btn-outline-animated hover-lift-enhanced rounded-full bg-[color-mix(in_oklab,var(--foreground)_5%,transparent)] px-8 py-3.5 text-base font-medium ring-1 ring-[color-mix(in_oklab,var(--foreground)_20%,transparent)] transition-all duration-200"
+                style={{ cursor: "pointer" }}
+              >
+                Login
+              </Link>
+            </div>
+          </div>
+
+          {/* Right: hero dashboard image */}
+          <div
+            className="hero-fg relative mt-4 w-full rounded-3xl bg-[color-mix(in_oklab,var(--background)_40%,transparent)] shadow-[0_20px_60px_rgba(0,0,0,0.75)] lg:mt-20 lg:max-w-none lg:w-[90vw] lg:overflow-hidden lg:justify-self-end lg:rounded-[16px] lg:border-[color-mix(in_oklab,var(--foreground)_16%,transparent)] lg:shadow-[0_26px_80px_rgba(0,0,0,0.85)] lg:mr-[-50vw]"
+            style={{
+              clipPath: "inset(0 round 16px)",
+              WebkitClipPath: "inset(0 round 16px)",
+            }}
           >
-            Pick Your Sensei
-          </Link>
-          <Link
-            href="/login"
-            className="btn btn-outline-animated hover-lift-enhanced rounded-full bg-[color-mix(in_oklab,var(--foreground)_5%,transparent)] px-8 py-3.5 text-base font-medium ring-1 ring-[color-mix(in_oklab,var(--foreground)_20%,transparent)] transition-all duration-200"
-            style={{ cursor: "pointer" }}
-          >
-            Login
-          </Link>
+            <div className="relative w-full">
+              <div className="relative w-full">
+                <Image
+                  src="/images/landing/chattt.png"
+                  alt="Verse Sensei dashboard preview"
+                  width={1200}
+                  height={760}
+                  priority
+                  quality={100}
+                  className="h-full w-full object-cover object-top"
+                  sizes="(min-width: 1024px) 90vw, 100vw"
+                />
+              </div>
+            </div>
+            <div
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-36"
+              style={{
+                background:
+                  "linear-gradient(to bottom, rgba(0,0,0,0) 0%, var(--background) 100%)",
+              }}
+            />
+          </div>
         </div>
 
         <div className="scroll-indicator" aria-hidden>

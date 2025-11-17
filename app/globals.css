@@ -763,10 +763,10 @@ button {
   -webkit-mask-image: linear-gradient(
     to bottom,
     black 0%,
-    black 62%,
+    black 52%,
     transparent 100%
   ); */
-  mask-image: linear-gradient(to bottom, black 0%, black 62%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 52%, transparent 100%);
 }
 .hero-background-panels .panel-hero {
   position: absolute;
