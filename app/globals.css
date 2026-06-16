@@ -37,7 +37,9 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  /* Neo-brutalist landing — Tailwind utilities (bg-paper, text-ink, font-display, …) */
+  /* Neo-brutalist landing — Tailwind utilities (bg-paper, text-ink, font-clash, …).
+     Font utilities map to the raw --ff-* vars from next/font (see layout.tsx).
+     Named font-clash (not font-display) to avoid the legacy .font-display class. */
   --color-paper: var(--paper);
   --color-paper-raised: var(--paper-raised);
   --color-ink: var(--ink);
@@ -47,10 +49,10 @@
   --color-red-deep: var(--red-deep);
   --color-ghost: var(--ghost);
   --color-screentone: var(--screentone);
-  --font-display: var(--font-clash);
-  --font-body: var(--font-general);
-  --font-label: var(--font-space-mono);
-  --font-sfx: var(--font-bangers);
+  --font-clash: var(--ff-clash);
+  --font-body: var(--ff-general);
+  --font-label: var(--ff-space-mono);
+  --font-sfx: var(--ff-bangers);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1392,7 +1394,7 @@ button {
 .paper-canvas {
   background-color: var(--paper);
   color: var(--ink);
-  font-family: var(--font-body), system-ui, sans-serif;
+  font-family: var(--ff-general), system-ui, sans-serif;
   min-height: 100svh;
   position: relative;
 }
@@ -1409,8 +1411,8 @@ body:has(.paper-canvas)::after {
 
 /* Halftone screentone texture (manga shading) */
 .halftone {
-  background-image: radial-gradient(var(--screentone) 1.1px, transparent 1.2px);
-  background-size: 7px 7px;
+  background-image: radial-gradient(var(--ghost) 1px, transparent 1.4px);
+  background-size: 8px 8px;
 }
 
 /* Comic burst pulse — staggered "pop" for badges + ambient bursts */
