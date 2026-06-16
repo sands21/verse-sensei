@@ -1,0 +1,224 @@
+# Verse Sensei
+
+> Chat with anime characters who stay true to their personality — and learn the way your heroes would explain the world.
+
+This file is the durable context for the project: what it is, what it's trying to solve, how it's built, and the design system we're standardizing on. Keep it current as decisions are made.
+
+---
+
+## 1. The product
+
+**One-liner:** Pick any anime universe, pick any character (hero or villain), and have a real, in-voice conversation with them — for fun, motivation, or to understand complex ideas through their perspective.
+
+**The deeper bet ("learn from your heroes"):** People are already emotionally drawn to certain characters. That attachment is an underused learning channel. If Naruto explains perseverance, or Goku explains pushing past limits, it lands differently than a generic tutorial. The product turns parasocial attachment into a way to *think differently* about ideas — complex topics, explained in a voice you already trust and enjoy.
+
+**Positioning:** Not a generic AI chatbot with a skin. The persona *is* the product. Every design and engineering decision should reinforce "this feels like talking to the real character," not "this is ChatGPT with anime branding."
+
+**Target users:** Anime fans (teens–young adults) who want something more playful and personal than a stock assistant; secondarily, curious people who learn better through story and character than through lectures.
+
+### Current universes & characters
+Naruto, One Piece, Attack on Titan, Dragon Ball, Jujutsu Kaisen, Demon Slayer. Characters and personas live in the database (`characters.persona_config`), not in code. "More worlds incoming" is part of the brand promise.
+
+---
+
+## 2. Tech stack & architecture
+
+- **Framework:** Next.js 15 (App Router) + React 19, TypeScript, `--turbopack`.
+- **Styling:** Tailwind CSS v4 (`@tailwindcss/postcss`) + a large `app/globals.css` with CSS custom properties. `framer-motion` for animation. `lucide-react` icons. `cn()` helper (`clsx` + `tailwind-merge`) in `lib/utils.ts`.
+- **Auth + DB:** Supabase (`@supabase/supabase-js`). Email/password, magic link (OTP/PKCE), and Google OAuth.
+- **LLM:** OpenRouter (`/api/chat`), called server-side only. Model is configurable via env.
+- **Hosting:** Vercel (config in `next.config.ts`; remote image patterns for Google/Gravatar/GitHub avatars).
+
+> Note: `package.json` is still named `"helix"` and the OpenRouter `X-Title` header says `"helix"` — leftover template identity, slated for cleanup (see Roadmap). The chat UI lives under `app/chat/v0/` (a v0.dev export that was never renamed).
+
+### Key files
+| Path | Purpose |
+|---|---|
+| `app/page.tsx` → `app/components/LandingPage.tsx` | Landing page (being redesigned — see §4). |
+| `app/chat/page.tsx` | Auth-guarded chat route; wraps `ChatInterface`. |
+| `app/chat/v0/chat-interface.tsx` | Chat orchestration: state, conversation/message persistence, calls `/api/chat`. |
+| `app/chat/v0/chat-sidebar.tsx` | Conversation list, search modal, profile modal. |
+| `app/chat/v0/chat-input.tsx` | Composer + universe/character picker popovers. |
+| `app/chat/v0/chat-messages.tsx` | Message list + hand-rolled markdown renderer + typing indicator. |
+| `app/chat/v0/chat-empty-state.tsx` | Empty-state greeting + sample prompts. |
+| `app/api/chat/route.ts` | Server: verifies Supabase JWT, assembles persona system prompt, calls OpenRouter, persists AI reply. |
+| `app/api/health/route.ts` | Supabase auth health check. |
+| `app/components/AuthGuard.tsx` | Client gate; redirects to `/login?redirect=…` if no session. |
+| `app/login/page.tsx`, `app/signup/page.tsx` | Auth pages (~80% duplicated — candidate for a shared hook). |
+| `lib/supabaseClient.ts` | Anon client (browser). |
+| `lib/supabaseAdmin.ts` | Service-role client (server only; guarded if key missing). |
+
+### Database (Supabase / Postgres)
+- `users` — `id`, `email` (upserted on auth).
+- `universes` — `id`, `name`.
+- `characters` — `id`, `name`, `universe_id`, `persona_config` (JSON: voice, intelligence level, knowledge_scope, explain_guidelines, etc.).
+- `conversations` — `id`, `user_id`, `character_id`, `started_at`, `pinned`, `archived`.
+- `messages` — `id`, `conversation_id`, `sender` (`user`/`ai`), `content`, `timestamp`, `user_id`.
+
+### Persona pipeline (`/api/chat`)
+1. Read `Authorization: Bearer <jwt>` → resolve `userId` (anon client `getUser(token)`).
+2. Load character (`persona_config`) + universe name via the **service-role** client.
+3. Load up to 20 prior messages for `conversationId` as history.
+4. Build a system prompt: "You are {character} from {universe}. Roleplay strictly in first person…" + the persona profile JSON + explain-guidelines.
+5. Call OpenRouter (`temperature: 0.7`), clean meta tokens (e.g. `<|begin_of_sentence|>`) from output.
+6. Persist the AI reply to `messages`; return `{ reply, aiMessageId, usedFallback, … }`.
+
+### Environment variables
+```
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY        # server only
+OPENROUTER_API_KEY               # server only; absent → canned fallback reply
+OPENROUTER_MODEL                 # model id passed to OpenRouter
+```
+`.env*` is gitignored. There is no committed example file yet.
+
+### Commands
+```
+npm run dev      # next dev --turbopack
+npm run build    # next build --turbopack
+npm start        # next start
+npm run lint     # eslint
+```
+
+---
+
+## 3. Design system — neo-brutalist manga ("ink on paper")
+
+**Why this style:** The source material *is* this aesthetic — manga is ink on paper: hard panel borders, gutters, halftone screentone, speech bubbles, onomatopoeia. Treating the UI as a manga page is on-concept *and* technically robust: it's high-contrast, has no gradients/glow to turn muddy, and reflows cleanly to mobile (no absolute positioning). It's also distinctive — no competitor commits to it.
+
+**Discipline:** Brutalism here means bold + structural, not chaotic. Restraint lives in the palette (cream + ink + one red), not in the borders or shadows. Don't add a second accent color; create emphasis with the **red shadow** instead.
+
+### Color palette
+| Token | Hex | Role |
+|---|---|---|
+| `--paper` | `#F3EFE4` | Primary canvas (warm cream). |
+| `--paper-raised` | `#FFFFFF` | Cards, panels, raised surfaces. |
+| `--ink` | `#111111` | Text, borders, primary fills. |
+| `--ink-soft` | `#3A362D` | Body copy on cream. |
+| `--ink-muted` | `#777268` | Secondary/caption text. |
+| `--accent` | `#D11F1F` | Manga red — CTAs, emphasis, highlight, error states. |
+| `--accent-deep` | `#A81818` | Accent hover/pressed. |
+| `--ghost` | `#E2DCCB` | Faint fills, oversized ghost numbers. |
+| `--screentone` | `#CDC6B3` | Halftone dot color (texture only). |
+| `--ok` | `#2E7D32` | Success messages only (rare; e.g. "magic link sent"). |
+
+Borders are **always `--ink`** — there is no separate border color. Red is the *only* accent; use it sparingly and deliberately.
+
+### Typography
+Four faces. **Clash Display** and **General Sans** are self-hosted (Fontshare, free for commercial use — `.otf`/`.ttf`/`.woff2` files committed to the repo, loaded via `next/font/local`). **Space Mono** and **Bangers** load via `next/font/google`. Expose each as a CSS variable (`--font-clash`, `--font-general`, `--font-mono`, `--font-bangers`) so they work in CSS, Tailwind, and SVG `<text>`.
+
+- **Clash Display** (≈500–700) — **display**. Hero headlines, section titles, character names. Wide, characterful grotesque — design-forward editorial-brutalist (not condensed). `line-height: 1.0–1.05`, `letter-spacing: -0.01em to -0.02em`. Uppercase for the loud moments; mixed-case is also fine for calmer headers.
+- **General Sans** (400/500/700) — **body & UI**. Paragraphs, buttons, nav, descriptions. Clean and neutral-but-warm so it never competes with Clash.
+- **Space Mono** (400/700) — **labels**. Eyebrows, tags, timestamps, numeric stats. Uppercase, `letter-spacing: ~0.15–0.2em`.
+- **Bangers** — **shout/SFX only**. Onomatopoeia pops (`DON!! / POW!`) and burst-badge text (`NEW!! / LIVE`). Hand-drawn comic energy; never used for body or structural headings. This is the playful voice — keep it scoped to the loud comic moments.
+
+**Type scale (fluid):**
+| Role | Font | Size | Notes |
+|---|---|---|---|
+| Display XL (hero) | Clash Display 700 | `clamp(40px, 8vw, 72px)` | uppercase, lh ~1.0, tracking -0.02em |
+| Display L (section) | Clash Display 600–700 | `clamp(26px, 4vw, 40px)` | uppercase |
+| Card name / H3 | Clash Display 600 | 16–20px | |
+| Body | General Sans 400/500 | 15–16px | lh 1.55 |
+| Small / caption | General Sans | 12–13px | |
+| Label / eyebrow | Space Mono | 11px | uppercase, tracked |
+| SFX / burst badge | Bangers | large / contextual | comic shout only |
+
+### Borders, shadows, radius
+- **Borders:** `2.5px solid var(--ink)` on cards/buttons; `3px solid var(--ink)` on the page frame and major section dividers. Nothing is hairline.
+- **Shadows (no blur, ever):** the brutalist hard offset.
+  - `--shadow-sm`: `3px 3px 0 var(--ink)`
+  - `--shadow`: `4px 4px 0 var(--ink)` (default raised state)
+  - `--shadow-lift`: `6px 6px 0 var(--ink)` (hover)
+  - `--shadow-accent`: `4px 4px 0 var(--accent)` (featured/emphasis only)
+- **Radius:** `0` everywhere — no exceptions, including chat bubbles. The only organic/non-rectangular shape in the system is the **SVG impact burst** (below), and that's a spiky silhouette, not a rounded corner.
+
+### Textures
+- **Halftone screentone:** `background-image: radial-gradient(var(--screentone) 1.1px, transparent 1.2px); background-size: 7px 7px;` — for shaded panels.
+- **Speed lines:** `repeating-conic-gradient(...)` burst behind energetic elements (e.g. the hero chat). Keep subtle (`opacity ~0.4–0.5`).
+
+### Components
+- **Buttons:** Primary = red bg, ink border, `--shadow`, white uppercase Space-Grotesk-700 text. Secondary = white bg, same border/shadow. Ghost = transparent, ink border, no shadow.
+- **Interaction:** hover → `translate(-2px,-2px)` + shadow grows to `6·6·0`. Pressed → `translate(2px,2px)` + shadow shrinks to `1·1·0`. Snappy transitions (`~120–150ms ease-out`).
+- **Cards / panels:** white bg, `2.5px` ink border, `--shadow`. Featured card uses `--shadow-accent`.
+- **Speech bubble (signature element) — fully brutalist, sharp corners, side tails:**
+  - **Character** = cream/white fill, `2.5px` ink border, `--shadow` (ink), tail on the **left** edge pointing left toward the avatar. Built with the double-triangle trick (outer ink triangle + inner fill triangle) so the tail is outlined too. In-voice text; `*actions*` rendered in **italic red**.
+  - **User** = solid **ink** fill, cream text, `--shadow-accent` (**red**), tail on the **right** edge pointing right (single ink triangle, since fill = border = ink). The user is the loud black-and-red one driving the conversation.
+  - Avatar chips on each side reuse the box treatment (ink border + matching ink/red shadow) so each side reads as a set.
+  - This is the canonical chat element and the later `/chat` restyle will reuse it.
+- **Impact burst (SVG comic-explosion balloon):** a spiky silhouette built from two stacked layers — a solid-`--ink` polygon offset by `4–5px` (the hard shadow) under a fill polygon with a `2.5–3px` ink `stroke` + `stroke-linejoin: round`. Build our own — **never use stock burst images.** One reusable component; the fill color carries the meaning (see policy). Burst text is set in **Bangers** — rendered as an overlaid HTML layer or SVG `<text>` via `font-family: var(--font-bangers)`. Each instance gets a slight rotation (±5–9°) so they feel hand-inked.
+- **Burst usage — the rule is `red = attention, cream = atmosphere`:**
+  - **Corner badges (functional):** pinned to the corner of a card, overlapping it. **Red fill** for genuine attention — `NEW!!` on a freshly-added world. **Cream/white fill** for lower-key status — `LIVE`, `SOON`.
+  - **Ambient bursts (decorative):** scattered sparsely behind/around content purely for manga texture. **Cream/ink-outline only — never red.** Low opacity, often no text.
+  - **No section-header bursts.** Bursts are accents and atmosphere, not headers. This keeps red meaningful (it's still the single accent) and stops the ambient ones competing with real alerts.
+  - **Pulse:** badges and ambient bursts gently throb (`scale 1 → ~1.06–1.10`, slow `ease-in-out`, staggered durations) for that comic "pop." Always gate behind `@media (prefers-reduced-motion: reduce)`.
+- **Section header (always):** Clash Display title + thick ink rule (`height: 4px; background: var(--ink)`) + a Space-Mono tag/count on the right. All sections use this calm style — the energy comes from the content (bursts, the chat demo, the cast), not shouting headers.
+- **Tags/badges:** Space Mono, uppercase, ink bg + cream text (or red bg + white). Badge bursts are the louder alternative.
+- **Onomatopoeia / SFX:** Bangers, oversized, slight rotation (`rotate(-2deg to -5deg)`), red — used as accents, not chrome.
+
+### Interaction onomatopoeia (signature delight)
+Manga sound-effect words (`DON!!`, `BAM!`, `WHOOSH!`) that **pop on click** — never static. SFX needs an action behind it, so it's tied to interaction, not used as standing decoration (standing decoration = the cream ambient *bursts* instead).
+- **Scope: a curated action set only** — primary CTA, character/world select, send-message. Mundane clicks (nav, close, back) stay silent so the SFX keeps its impact.
+- **Themed word pools by action:** go/CTA → `LET'S GO! / GO!! / ZOOM!`; send → `WHOOSH! / ZIP! / SWISH!`; impact/select → `DON!! / DODON!! / BAM! / POW! / BOOM!`.
+- **Look:** Bangers, large, spawned at the click point. `-webkit-text-stroke: 2px` + hard `text-shadow` for the manga outline. Randomly alternate red-fill/ink-outline ↔ ink-fill/red-outline. Random tilt (±11°). Pop-and-fade ~680ms (`scale 0.3→1.15→1.3`, drift up, fade), then remove from DOM.
+- **One reusable helper** `popSfx(pool, x, y)` — shared by landing now and the chat restyle later.
+- **a11y:** `aria-hidden`, decorative only — never the sole feedback for an action. Under `prefers-reduced-motion: reduce`, degrade to a brief static fade (no movement/scale).
+
+### Motion & a11y
+- Brutalist = snappy and physical (the hard-shadow lift). Avoid soft/long fades.
+- Always honor `prefers-reduced-motion: reduce` (disable parallax, lifts, burst pulse, SFX movement, auto-cycling).
+- Maintain ink-on-paper contrast (it's already very high). Icon-only buttons need `aria-label`; decorative SFX/textures/bursts need `aria-hidden`.
+
+### Mobile rule (the hard-won lesson)
+Design the **narrow** layout first, then let grids widen. Every section must be a flex/grid that **stacks or wraps** — **no absolute percentage positioning** (that was the old landing page's mobile-breaking sin). One component, one layout, scaled.
+
+---
+
+## 4. Current focus: landing page redesign
+
+**Decision:** Rebuild the landing page from scratch in the neo-brutalist manga style above. The old landing (greyscale collage hero, draggable "universe map" constellation, bento feature grid) is being **replaced** — it broke on mobile, the collage read as muddy, the map degraded to a generic list, and the bento "told" instead of "showed." Only the hero *copy* survives.
+
+**New structure ("conversation-first"), top to bottom:**
+1. **Hero** — eyebrow + Clash Display headline ("Think like your heroes / Complex ideas, their way") + sub + two CTAs (Pick your sensei / See the cast). On the right (desktop) / below (mobile): a **live, auto-typing chat demo** in a speech bubble — scripted/looping, *no* API calls, cycles through characters. Doubles as a preview of the streaming chat to come.
+2. **Pick your sensei** — responsive character rail/grid of bordered "panels" (face/portrait + Clash Display name + universe + trait). Desktop grid → mobile horizontal swipe. Each card deep-links to `/chat?universe=…&character=…` (route already supported). Featured-character-of-the-day folds in here (the daily pick is who's talking in the hero demo).
+3. **How it works** — three shared-border manga panels with ghost numbers: 01 Pick a world · 02 Pick a hero · 03 Start talking.
+4. **Footer** — inverted (ink bg, cream text), minimal.
+
+**Scope now:** Landing only. The dark `/chat` app stays as-is for this pass; the paper landing hands off into it. Restyling chat into this language is a deliberate **later** phase (needs extra thought, esp. the dark↔paper relationship and the streaming rebuild).
+
+**Assets:** Character portraits are being sourced ("can get some"). Until then, emoji placeholders fill the portrait slots; design must look good either way.
+
+### Fonts — already in the repo
+Variable `.ttf` files live in `app/fonts/`: `ClashDisplay-Variable.ttf`, `GeneralSans-Variable.ttf`, `GeneralSans-VariableItalic.ttf`. Load Clash Display + General Sans via `next/font/local` (variable, weight range e.g. `"400 700"`); load Space Mono + Bangers via `next/font/google`. Expose all four as CSS vars (`--font-clash`, `--font-general`, `--font-mono`, `--font-bangers`). See §3 Typography for roles.
+
+### Build plan & status (landing page)
+- [ ] **1. Foundation** — wire the 4 fonts in `app/layout.tsx`; add the brutalist design tokens + texture/utility classes (palette, shadows, halftone, burst, bubble, button, pulse, `popSfx`) to `globals.css` **without breaking the dark `/chat` styles** that share this file (see integration note below).
+- [ ] **2. Reusable pieces** — `popSfx(pool,x,y)` helper, `<Burst>` component (badge + ambient), brutalist `<Button>`, speech-bubble component.
+- [ ] **3. Hero** — Clash headline + CTAs + the scripted/looping speech-bubble chat demo (no API calls), mobile-first.
+- [ ] **4. Pick-your-sensei rail** — data-driven from Supabase (`universes`/`characters`) with a static fallback; deep-links to `/chat?universe=…&character=…`; emoji-or-portrait safe.
+- [ ] **5. How-it-works** (3 ink-gutter panels) + **footer** (inverted).
+- [ ] **6. Wire-up** — replace `app/page.tsx`'s `LandingPage` with the new one; verify mobile reflow; delete/retire the old `LandingPage.tsx`, `HeroCollage.tsx`, `HeroMotion.tsx`, `UniverseMap.tsx` once nothing references them.
+
+**Integration note (important):** `globals.css` currently sets a **dark** theme — `:root` has `--background:#000`, and `body` is dark with `--font-poppins`. That's used by the old landing **and the `/chat` app we're keeping**. The new paper landing must not invert `/chat`. Plan: introduce the brutalist tokens under their own names (`--paper`, `--ink`, etc.) and scope the paper canvas to the landing (e.g. a wrapper class / route-level style) rather than flipping global `body`. Confirm `/chat` still renders dark after foundation work.
+
+---
+
+## 5. Known issues & roadmap (not yet started)
+
+Beyond the landing redesign, these are the standing improvement areas (deferred, but documented so they're not lost):
+
+- **Streaming responses** — the #1 chat gap. Currently the API returns the full reply at once behind a typing indicator. Should stream tokens.
+- **Security / RLS audit** — `/api/chat` uses the service-role key and writes to whatever `conversationId` the client sends without verifying ownership; the client also writes messages directly via the anon key. The whole thing rests on RLS policies that need verifying. Treat as important.
+- **Sidebar N+1 queries** — `chat-sidebar.tsx` fires a separate character query *and* pulls every message per conversation (40+ sequential round-trips for 20 convos). Collapse into one join/RPC.
+- **Persona-aware empty state** — `chat-empty-state.tsx` shows generic prompts ("explain quantum computing") and ignores `characterName`. Should reflect the selected character.
+- **Identity cleanup** — rename `"helix"` (package.json, OpenRouter `X-Title`); rename the `v0/` chat folder; rename junk image files in `HeroCollage` (`io;.jpg`, etc.) if that component survives.
+- **Auth de-duplication** — login/signup share ~80% of their logic; extract a shared hook/component.
+- **Misc** — hand-rolled regex markdown via `dangerouslySetInnerHTML` (consider a real renderer); auto-generated conversation titles; no tests/CI.
+
+---
+
+## 6. Working agreements
+- Keep this file updated when product direction, the design system, or architecture decisions change.
+- New UI follows §3 strictly. If a need arises that the system doesn't cover, extend the system here first, then build.
+- Mobile-first, always (see §3 mobile rule).
+- Don't reintroduce gradients/glow/blur into the brutalist surfaces — emphasis comes from the red shadow and scale, not lighting effects.
