@@ -7,6 +7,24 @@
   --panel: #23272f;
   --border: #2e3440;
   --accent: #ff7a45; /* default accent, can theme per universe later */
+
+  /* === Neo-brutalist manga landing system (paper canvas) — see CLAUDE.md §3 ===
+     Distinct token names so they never collide with the dark chat theme above
+     (the manga red is --red, NOT --accent which the chat app uses). */
+  --paper: #f3efe4;
+  --paper-raised: #ffffff;
+  --ink: #111111;
+  --ink-soft: #3a362d;
+  --ink-muted: #777268;
+  --red: #d11f1f;
+  --red-deep: #a81818;
+  --ghost: #e2dccb;
+  --screentone: #cdc6b3;
+  --ok: #2e7d32;
+  --shadow-sm: 3px 3px 0 var(--ink);
+  --shadow: 4px 4px 0 var(--ink);
+  --shadow-lift: 6px 6px 0 var(--ink);
+  --shadow-red: 4px 4px 0 var(--red);
 }
 
 @theme inline {
@@ -18,6 +36,21 @@
   --color-accent: var(--accent);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Neo-brutalist landing — Tailwind utilities (bg-paper, text-ink, font-display, …) */
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-muted: var(--ink-muted);
+  --color-red: var(--red);
+  --color-red-deep: var(--red-deep);
+  --color-ghost: var(--ghost);
+  --color-screentone: var(--screentone);
+  --font-display: var(--font-clash);
+  --font-body: var(--font-general);
+  --font-label: var(--font-space-mono);
+  --font-sfx: var(--font-bangers);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1346,5 +1379,55 @@ button {
 
   .quote-text {
     transition: opacity 0.3s ease !important;
+  }
+}
+
+/* ==========================================================================
+   NEO-BRUTALIST MANGA LANDING SYSTEM
+   Scoped to .paper-canvas so the dark /chat app (which shares this file and a
+   globally-dark body) is never affected. See CLAUDE.md §3 / §4.
+   ========================================================================== */
+
+/* Paper canvas wrapper — the landing mounts inside this. */
+.paper-canvas {
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  min-height: 100svh;
+  position: relative;
+}
+
+/* When the paper landing is present, neutralise the global dark body chrome
+   (vignette overlays + black bg) so paper edges/overscroll stay paper. */
+body:has(.paper-canvas) {
+  background: var(--paper);
+}
+body:has(.paper-canvas)::before,
+body:has(.paper-canvas)::after {
+  display: none;
+}
+
+/* Halftone screentone texture (manga shading) */
+.halftone {
+  background-image: radial-gradient(var(--screentone) 1.1px, transparent 1.2px);
+  background-size: 7px 7px;
+}
+
+/* Comic burst pulse — staggered "pop" for badges + ambient bursts */
+@keyframes burst-pulse-a {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+@keyframes burst-pulse-b {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+.burst-pulse-a { animation: burst-pulse-a 2.4s ease-in-out infinite; transform-origin: center; }
+.burst-pulse-b { animation: burst-pulse-b 3.1s ease-in-out infinite; transform-origin: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .burst-pulse-a,
+  .burst-pulse-b {
+    animation: none !important;
   }
 }

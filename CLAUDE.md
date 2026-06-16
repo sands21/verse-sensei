@@ -97,8 +97,8 @@ npm run lint     # eslint
 | `--ink` | `#111111` | Text, borders, primary fills. |
 | `--ink-soft` | `#3A362D` | Body copy on cream. |
 | `--ink-muted` | `#777268` | Secondary/caption text. |
-| `--accent` | `#D11F1F` | Manga red — CTAs, emphasis, highlight, error states. |
-| `--accent-deep` | `#A81818` | Accent hover/pressed. |
+| `--red` | `#D11F1F` | Manga red — CTAs, emphasis, highlight, error states. (CSS var is `--red`, **not** `--accent` — the legacy dark `/chat` theme already owns `--accent: #ff7a45`.) |
+| `--red-deep` | `#A81818` | Red hover/pressed. |
 | `--ghost` | `#E2DCCB` | Faint fills, oversized ghost numbers. |
 | `--screentone` | `#CDC6B3` | Halftone dot color (texture only). |
 | `--ok` | `#2E7D32` | Success messages only (rare; e.g. "magic link sent"). |
@@ -106,7 +106,7 @@ npm run lint     # eslint
 Borders are **always `--ink`** — there is no separate border color. Red is the *only* accent; use it sparingly and deliberately.
 
 ### Typography
-Four faces. **Clash Display** and **General Sans** are self-hosted (Fontshare, free for commercial use — `.otf`/`.ttf`/`.woff2` files committed to the repo, loaded via `next/font/local`). **Space Mono** and **Bangers** load via `next/font/google`. Expose each as a CSS variable (`--font-clash`, `--font-general`, `--font-mono`, `--font-bangers`) so they work in CSS, Tailwind, and SVG `<text>`.
+Four faces. **Clash Display** and **General Sans** are self-hosted (Fontshare, free for commercial use — `.otf`/`.ttf`/`.woff2` files committed to the repo, loaded via `next/font/local`). **Space Mono** and **Bangers** load via `next/font/google`. Expose each as a CSS variable (`--font-clash`, `--font-general`, `--font-space-mono`, `--font-bangers`) so they work in CSS, Tailwind, and SVG `<text>`.
 
 - **Clash Display** (≈500–700) — **display**. Hero headlines, section titles, character names. Wide, characterful grotesque — design-forward editorial-brutalist (not condensed). `line-height: 1.0–1.05`, `letter-spacing: -0.01em to -0.02em`. Uppercase for the loud moments; mixed-case is also fine for calmer headers.
 - **General Sans** (400/500/700) — **body & UI**. Paragraphs, buttons, nav, descriptions. Clean and neutral-but-warm so it never competes with Clash.
@@ -130,7 +130,7 @@ Four faces. **Clash Display** and **General Sans** are self-hosted (Fontshare, f
   - `--shadow-sm`: `3px 3px 0 var(--ink)`
   - `--shadow`: `4px 4px 0 var(--ink)` (default raised state)
   - `--shadow-lift`: `6px 6px 0 var(--ink)` (hover)
-  - `--shadow-accent`: `4px 4px 0 var(--accent)` (featured/emphasis only)
+  - `--shadow-red`: `4px 4px 0 var(--red)` (featured/emphasis only)
 - **Radius:** `0` everywhere — no exceptions, including chat bubbles. The only organic/non-rectangular shape in the system is the **SVG impact burst** (below), and that's a spiky silhouette, not a rounded corner.
 
 ### Textures
@@ -189,10 +189,10 @@ Design the **narrow** layout first, then let grids widen. Every section must be 
 **Assets:** Character portraits are being sourced ("can get some"). Until then, emoji placeholders fill the portrait slots; design must look good either way.
 
 ### Fonts — already in the repo
-Variable `.ttf` files live in `app/fonts/`: `ClashDisplay-Variable.ttf`, `GeneralSans-Variable.ttf`, `GeneralSans-VariableItalic.ttf`. Load Clash Display + General Sans via `next/font/local` (variable, weight range e.g. `"400 700"`); load Space Mono + Bangers via `next/font/google`. Expose all four as CSS vars (`--font-clash`, `--font-general`, `--font-mono`, `--font-bangers`). See §3 Typography for roles.
+Variable `.ttf` files live in `app/fonts/`: `ClashDisplay-Variable.ttf`, `GeneralSans-Variable.ttf`, `GeneralSans-VariableItalic.ttf`. Load Clash Display + General Sans via `next/font/local` (variable, weight range e.g. `"400 700"`); load Space Mono + Bangers via `next/font/google`. Expose all four as CSS vars (`--font-clash`, `--font-general`, `--font-space-mono`, `--font-bangers`). See §3 Typography for roles.
 
 ### Build plan & status (landing page)
-- [ ] **1. Foundation** — wire the 4 fonts in `app/layout.tsx`; add the brutalist design tokens + texture/utility classes (palette, shadows, halftone, burst, bubble, button, pulse, `popSfx`) to `globals.css` **without breaking the dark `/chat` styles** that share this file (see integration note below).
+- [x] **1. Foundation** — ✅ DONE. 4 fonts wired in `app/layout.tsx` (Clash/General via `next/font/local`, Space Mono/Bangers via google). Tokens added to `globals.css` `:root` (`--paper`, `--ink`, `--red`, shadows, etc.) + registered in `@theme inline` so Tailwind utilities exist: **`bg-paper bg-paper-raised bg-ink bg-red text-ink text-ink-soft text-ink-muted text-red border-ink font-display font-body font-label font-sfx`**. Helper classes available: **`.paper-canvas`** (the landing wrapper — sets paper bg/ink/General Sans, neutralises the global dark body chrome via `body:has(.paper-canvas)`), **`.halftone`**, **`.burst-pulse-a` / `.burst-pulse-b`** (reduced-motion-gated). `tsc --noEmit` passes; `/chat` untouched. Shadows are raw CSS vars (`var(--shadow)`, `var(--shadow-red)`, etc.) — use inline `style` or arbitrary props like `shadow-[var(--shadow)]`.
 - [ ] **2. Reusable pieces** — `popSfx(pool,x,y)` helper, `<Burst>` component (badge + ambient), brutalist `<Button>`, speech-bubble component.
 - [ ] **3. Hero** — Clash headline + CTAs + the scripted/looping speech-bubble chat demo (no API calls), mobile-first.
 - [ ] **4. Pick-your-sensei rail** — data-driven from Supabase (`universes`/`characters`) with a static fallback; deep-links to `/chat?universe=…&character=…`; emoji-or-portrait safe.
@@ -218,6 +218,7 @@ Beyond the landing redesign, these are the standing improvement areas (deferred,
 ---
 
 ## 6. Working agreements
+- **Pause for the user's review after each build step** (the §4 checklist items) — do not roll straight into the next step. Present what changed + how to verify, then wait for go-ahead.
 - Keep this file updated when product direction, the design system, or architecture decisions change.
 - New UI follows §3 strictly. If a need arises that the system doesn't cover, extend the system here first, then build.
 - Mobile-first, always (see §3 mobile rule).
