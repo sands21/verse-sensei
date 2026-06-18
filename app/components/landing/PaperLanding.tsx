@@ -1,6 +1,8 @@
 import { Button } from "../brutal/Button";
 import { Hero } from "./Hero";
 import { SenseiRail } from "./SenseiRail";
+import { HowItWorks } from "./HowItWorks";
+import { Footer } from "./Footer";
 
 // New neo-brutalist landing (paper canvas). Assembled section by section.
 // Mounted at /preview during the build; swaps into / at Step 6. See CLAUDE.md §4.
@@ -26,6 +28,8 @@ export default function PaperLanding() {
       <Nav />
       <Hero />
       <SenseiRail />
+      <HowItWorks />
+      <Footer />
     </div>
   );
 }

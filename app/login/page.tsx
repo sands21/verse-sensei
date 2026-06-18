@@ -4,6 +4,11 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import supabase from "@/lib/supabaseClient";
+import {
+  getAuthCallbackUrl,
+  getSafeRedirect,
+  stripSupabaseAuthHash,
+} from "@/lib/authRedirect";
 
 export default function LoginPage() {
   return (
@@ -21,7 +26,7 @@ function LoginContent() {
   const [status, setStatus] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [closing, setClosing] = useState(false);
-  const redirect = search.get("redirect") || "/chat";
+  const redirect = getSafeRedirect(search.get("redirect"));
   const [isError, setIsError] = useState(false);
 
   const mapAuthError = (raw: string): string => {
@@ -38,13 +43,15 @@ function LoginContent() {
 
   useEffect(() => {
     const handleRedirect = async () => {
+      stripSupabaseAuthHash();
+
       // Handle magic-link redirect (PKCE)
       const code = search.get("code");
       if (code) {
         try {
           setStatus("Signing you in...");
-          // @ts-expect-error available at runtime in supabase-js v2
-          await supabase.auth.exchangeCodeForSession({ code });
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
         } catch {
           // ignore
         }
@@ -71,7 +78,7 @@ function LoginContent() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}${redirect}`,
+          redirectTo: getAuthCallbackUrl(window.location.origin, redirect),
         },
       });
       if (error) {
@@ -116,12 +123,15 @@ function LoginContent() {
         }
       } else {
         // Fallback: magic link
-        const redirectTo = `${
-          window.location.origin
-        }/login?redirect=${encodeURIComponent(redirect)}`;
         const { error } = await supabase.auth.signInWithOtp({
           email,
-          options: { emailRedirectTo: redirectTo, shouldCreateUser: true },
+          options: {
+            emailRedirectTo: getAuthCallbackUrl(
+              window.location.origin,
+              redirect
+            ),
+            shouldCreateUser: true,
+          },
         });
         if (error) throw error;
         setStatus("Check your email for the magic link.");

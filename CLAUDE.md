@@ -25,7 +25,7 @@ Naruto, One Piece, Attack on Titan, Dragon Ball, Jujutsu Kaisen, Demon Slayer. C
 
 - **Framework:** Next.js 15 (App Router) + React 19, TypeScript, `--turbopack`.
 - **Styling:** Tailwind CSS v4 (`@tailwindcss/postcss`) + a large `app/globals.css` with CSS custom properties. `framer-motion` for animation. `lucide-react` icons. `cn()` helper (`clsx` + `tailwind-merge`) in `lib/utils.ts`.
-- **Auth + DB:** Supabase (`@supabase/supabase-js`). Email/password, magic link (OTP/PKCE), and Google OAuth.
+- **Auth + DB:** Supabase (`@supabase/supabase-js`). Email/password, magic link (OTP/PKCE), and Google OAuth. OAuth/email-link returns are funneled through `/auth/callback` so tokens do not land on app routes like `/chat`.
 - **LLM:** OpenRouter (`/api/chat`), called server-side only. Model is configurable via env.
 - **Hosting:** Vercel (config in `next.config.ts`; remote image patterns for Google/Gravatar/GitHub avatars).
 
@@ -43,8 +43,10 @@ Naruto, One Piece, Attack on Titan, Dragon Ball, Jujutsu Kaisen, Demon Slayer. C
 | `app/chat/v0/chat-empty-state.tsx` | Empty-state greeting + sample prompts. |
 | `app/api/chat/route.ts` | Server: verifies Supabase JWT, assembles persona system prompt, calls OpenRouter, persists AI reply. |
 | `app/api/health/route.ts` | Supabase auth health check. |
+| `app/auth/callback/page.tsx` | Client auth callback: exchanges Supabase PKCE code, upserts user, strips legacy token fragments, then redirects safely. |
 | `app/components/AuthGuard.tsx` | Client gate; redirects to `/login?redirect=…` if no session. |
 | `app/login/page.tsx`, `app/signup/page.tsx` | Auth pages (~80% duplicated — candidate for a shared hook). |
+| `lib/authRedirect.ts` | Shared auth redirect helpers: internal-only redirects, auth callback URL builder, legacy token-fragment stripping. |
 | `lib/supabaseClient.ts` | Anon client (browser). |
 | `lib/supabaseAdmin.ts` | Service-role client (server only; guarded if key missing). |
 
@@ -57,11 +59,13 @@ Naruto, One Piece, Attack on Titan, Dragon Ball, Jujutsu Kaisen, Demon Slayer. C
 
 ### Persona pipeline (`/api/chat`)
 1. Read `Authorization: Bearer <jwt>` → resolve `userId` (anon client `getUser(token)`).
-2. Load character (`persona_config`) + universe name via the **service-role** client.
-3. Load up to 20 prior messages for `conversationId` as history.
-4. Build a system prompt: "You are {character} from {universe}. Roleplay strictly in first person…" + the persona profile JSON + explain-guidelines.
-5. Call OpenRouter (`temperature: 0.7`), clean meta tokens (e.g. `<|begin_of_sentence|>`) from output.
-6. Persist the AI reply to `messages`; return `{ reply, aiMessageId, usedFallback, … }`.
+2. Reject unauthenticated requests and messages over 4000 characters.
+3. If `conversationId` is present, verify it belongs to `userId` before reading history or writing AI output.
+4. Load character (`persona_config`) + universe name via the **service-role** client.
+5. Load up to 20 prior messages for `conversationId` as history.
+6. Build a system prompt: "You are {character} from {universe}. Roleplay strictly in first person…" + the persona profile JSON + explain-guidelines.
+7. Call OpenRouter with `stream: true` (`temperature: 0.7`) and proxy chunks to the client as Server-Sent Events (`delta`, `done`, `error`).
+8. Accumulate and clean the final reply server-side (e.g. remove `<|begin_of_sentence|>`), persist it to `messages`, then send the final `done` event with `{ aiMessageId, usedFallback, … }`.
 
 ### Environment variables
 ```
@@ -71,7 +75,15 @@ SUPABASE_SERVICE_ROLE_KEY        # server only
 OPENROUTER_API_KEY               # server only; absent → canned fallback reply
 OPENROUTER_MODEL                 # model id passed to OpenRouter
 ```
-`.env*` is gitignored. There is no committed example file yet.
+`.env*` is gitignored, so **a fresh clone has no `.env.local`** — the app will throw `Missing NEXT_PUBLIC_SUPABASE_URL` until you recreate it (values live in the user's Vercel project → Settings → Environment Variables, or their original local clone). A skeleton `.env.local` with `REPLACE_ME` placeholders is in the repo root; fill it in, then **restart the dev server** (env is read once at startup — editing it while the server runs has no effect). This is a config issue, *not* a Supabase outage/ban and *not* a reason to migrate databases. There is no committed example file yet.
+
+### Auth security notes
+- Supabase browser auth uses `flowType: "pkce"` and `detectSessionInUrl: false` in `lib/supabaseClient.ts`; `/auth/callback` explicitly exchanges the PKCE code.
+- Google OAuth, magic links, and email confirmations should redirect to `/auth/callback?redirect=…`, never directly to `/chat` or another app route. Direct app-route redirects can expose `access_token`, `refresh_token`, or `provider_token` in the URL fragment under older/implicit-style flows.
+- Redirect targets must stay internal-only via `getSafeRedirect()`; do not pass raw query params into `router.replace()` or Supabase `redirectTo`.
+- `/api/chat` uses the service-role client, so it must enforce auth/ownership in code before reading history or writing AI messages. Keep the `conversation.user_id === auth user id` check whenever touching that route.
+- Supabase Auth URL settings should include `http://localhost:3000/auth/callback` and the production equivalent.
+- If a full auth URL with tokens is shared, treat that session as compromised: sign out/revoke the Supabase session and consider revoking the Google OAuth grant.
 
 ### Commands
 ```
@@ -206,8 +218,8 @@ Font files live in `app/fonts/`. **Clash Display** loads from discrete weight fi
   - All pass `tsc` + ESLint. Not yet mounted anywhere (Step 3 assembles them).
 - [x] **3. Hero** — ✅ DONE. `app/components/landing/Hero.tsx` (scripted looping typing demo, 4 characters, reduced-motion safe), `PaperLanding.tsx` (nav + hero orchestrator), mounted at **`/preview`** (`app/preview/page.tsx`) for review — `/` still serves the old landing until Step 6. Dev server config in `.claude/launch.json` (`dev`, port 3000). Verified desktop + mobile (375px) reflow cleanly, no horizontal overflow. `tsc`/ESLint pass. Review polish applied: headline → `font-bold` (Clash is variable, defaulted to 400), halftone softened (lighter/finer dots — `--ghost`, 8px) + body `font-medium` for readability over texture, demo hold extended to 5.2s, `LIVE` burst enlarged to 96px.
 - [x] **4. Pick-your-sensei rail** — ✅ DONE. `app/components/landing/SenseiRail.tsx`: calm header (Clash title + ink rule + Space-Mono "06 worlds"), one component that's a horizontal swipe on mobile → `lg:grid-cols-4` on desktop (no separate layouts). `CharacterCard` deep-links to `/chat?universe=…&character=…`; emoji portrait slots. Featured card (Naruto) = red shadow + `TODAY` burst; Gojo = `NEW!!` red burst; ink `SEE ALL` tile (red shadow) → `/chat`. Two cream ambient bursts at the edges. Verified desktop grid + mobile swipe (no h-overflow). Mobile-rail polish applied: vertical pad so corner badges/lift don't crop; gutter kept outside the scroll container so the first card aligns with the title (scroll-snap was eating start padding); vertical-only lift on the rail (x-translate gated to `lg:`) so the edge card doesn't crop on hover; card shadows moved off inline `style` so the hover lift actually fires (see §3 Interaction). **Cast is currently static** (`CAST` array) — wiring it to Supabase `universes`/`characters` is a deferred follow-up (kept static so the page always renders without a live DB call).
-- [ ] **5. How-it-works** (3 ink-gutter panels) + **footer** (inverted).
-- [ ] **6. Wire-up** — replace `app/page.tsx`'s `LandingPage` with the new one; verify mobile reflow; delete/retire the old `LandingPage.tsx`, `HeroCollage.tsx`, `HeroMotion.tsx`, `UniverseMap.tsx` once nothing references them.
+- [x] **5. How-it-works** + **footer** — ✅ DONE. `HowItWorks.tsx`: calm header + a shared-border manga panel strip (one hard shadow) with oversized ghost numbers; panels 01/02 on paper, panel 03 is the red accent and is itself a `Link` to `/chat` (hover darkens to `--red-deep`, arrow nudges) — flush in the strip, so no box-lift. `Footer.tsx`: inverted (ink bg, cream text), Clash wordmark + red dot, tagline, EXPLORE/ACCOUNT link columns (hover→red), bottom rule with copyright + "powered by…". Both verified desktop + mobile (strip stacks vertically with `border-b` dividers; no h-overflow). `tsc`/ESLint pass.
+- [ ] **6. Wire-up** — ⏸️ **ON HOLD (deliberate).** The new landing is complete and lives at **`/preview`**; `/` still serves the **old** `LandingPage`. Holding the swap because the live project may be under review by a company the user applied to — keep the old landing in place and the new one parked at `/preview` until the user says go. When greenlit: point `app/page.tsx` at `PaperLanding`, verify reflow, then retire the old `LandingPage.tsx` / `HeroCollage.tsx` / `HeroMotion.tsx` / `UniverseMap.tsx` and remove the `/preview` route. Do NOT delete the old files before then.
 
 **Integration note (important):** `globals.css` currently sets a **dark** theme — `:root` has `--background:#000`, and `body` is dark with `--font-poppins`. That's used by the old landing **and the `/chat` app we're keeping**. The new paper landing must not invert `/chat`. Plan: introduce the brutalist tokens under their own names (`--paper`, `--ink`, etc.) and scope the paper canvas to the landing (e.g. a wrapper class / route-level style) rather than flipping global `body`. Confirm `/chat` still renders dark after foundation work.
 
@@ -217,8 +229,8 @@ Font files live in `app/fonts/`. **Clash Display** loads from discrete weight fi
 
 Beyond the landing redesign, these are the standing improvement areas (deferred, but documented so they're not lost):
 
-- **Streaming responses** — the #1 chat gap. Currently the API returns the full reply at once behind a typing indicator. Should stream tokens.
-- **Security / RLS audit** — `/api/chat` uses the service-role key and writes to whatever `conversationId` the client sends without verifying ownership; the client also writes messages directly via the anon key. The whole thing rests on RLS policies that need verifying. Treat as important.
+- **Streaming polish** — basic `/api/chat` streaming is implemented via SSE and OpenRouter `stream: true`; follow-ups: cancellation/abort, better partial markdown behavior, and sidebar refresh after streamed replies.
+- **Security / RLS audit** — the immediate `/api/chat` service-role ownership bug is fixed (auth required; `conversationId` must belong to the auth user before history reads or AI writes). Still verify Supabase RLS policies for direct client writes/reads on `users`, `conversations`, and `messages`. Treat as important production hardening.
 - **Sidebar N+1 queries** — `chat-sidebar.tsx` fires a separate character query *and* pulls every message per conversation (40+ sequential round-trips for 20 convos). Collapse into one join/RPC.
 - **Persona-aware empty state** — `chat-empty-state.tsx` shows generic prompts ("explain quantum computing") and ignores `characterName`. Should reflect the selected character.
 - **Identity cleanup** — rename `"helix"` (package.json, OpenRouter `X-Title`); rename the `v0/` chat folder; rename junk image files in `HeroCollage` (`io;.jpg`, etc.) if that component survives.

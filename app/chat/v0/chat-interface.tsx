@@ -208,7 +208,7 @@ export function ChatInterface() {
       } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      // Call chat API
+      // Call chat API and stream the assistant reply into one live message.
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -222,18 +222,83 @@ export function ChatInterface() {
         }),
       });
 
-      const data = await response.json();
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || "Failed to get response");
+      }
 
-      if (data.ok && data.reply) {
-        const aiMessage: Message = {
-          id: data.aiMessageId || `ai-${Date.now()}`,
-          content: data.reply,
-          role: "assistant",
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, aiMessage]);
-      } else {
-        throw new Error(data.error || "Failed to get response");
+      if (!response.body) {
+        throw new Error("No response stream");
+      }
+
+      const aiMessageId = `ai-stream-${Date.now()}`;
+      const aiMessage: Message = {
+        id: aiMessageId,
+        content: "",
+        role: "assistant",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, aiMessage]);
+      setIsTyping(false);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      const handleEvent = (rawEvent: string) => {
+        const lines = rawEvent.split("\n");
+        const event =
+          lines
+            .find((line) => line.startsWith("event:"))
+            ?.slice("event:".length)
+            .trim() || "message";
+        const dataLine = lines.find((line) => line.startsWith("data:"));
+        if (!dataLine) return;
+
+        const data = JSON.parse(dataLine.slice("data:".length).trim());
+
+        if (event === "delta" && typeof data.text === "string") {
+          setMessages((prev) =>
+            prev.map((message) =>
+              message.id === aiMessageId
+                ? { ...message, content: message.content + data.text }
+                : message
+            )
+          );
+          return;
+        }
+
+        if (event === "done" && typeof data.aiMessageId === "string") {
+          setMessages((prev) =>
+            prev.map((message) =>
+              message.id === aiMessageId
+                ? { ...message, id: data.aiMessageId }
+                : message
+            )
+          );
+          return;
+        }
+
+        if (event === "error") {
+          throw new Error(data.error || "Failed to get response");
+        }
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split("\n\n");
+        buffer = events.pop() ?? "";
+
+        for (const event of events) {
+          if (event.trim()) handleEvent(event);
+        }
+      }
+
+      if (buffer.trim()) {
+        handleEvent(buffer);
       }
     } catch (error) {
       console.error("Error sending message:", error);

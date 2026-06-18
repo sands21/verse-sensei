@@ -4,6 +4,11 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import supabase from "@/lib/supabaseClient";
+import {
+  getAuthCallbackUrl,
+  getSafeRedirect,
+  stripSupabaseAuthHash,
+} from "@/lib/authRedirect";
 
 export default function SignupPage() {
   return (
@@ -21,7 +26,7 @@ function SignupContent() {
   const [status, setStatus] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [closing, setClosing] = useState(false);
-  const redirect = search.get("redirect") || "/chat";
+  const redirect = getSafeRedirect(search.get("redirect"));
   const [isError, setIsError] = useState(false);
 
   const mapAuthError = (raw: string): string => {
@@ -57,12 +62,14 @@ function SignupContent() {
 
   useEffect(() => {
     const handleRedirect = async () => {
+      stripSupabaseAuthHash();
+
       const code = search.get("code");
       if (code) {
         try {
           setStatus("Confirming your email...");
-          // @ts-expect-error available at runtime in supabase-js v2
-          await supabase.auth.exchangeCodeForSession({ code });
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
           const { data } = await supabase.auth.getUser();
           const user = data.user;
           if (user) {
@@ -102,7 +109,7 @@ function SignupContent() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}${redirect}`,
+          redirectTo: getAuthCallbackUrl(window.location.origin, redirect),
         },
       });
       if (error) {
@@ -129,7 +136,10 @@ function SignupContent() {
             email,
             password,
             options: {
-              emailRedirectTo: `${window.location.origin}${redirect}`,
+              emailRedirectTo: getAuthCallbackUrl(
+                window.location.origin,
+                redirect
+              ),
             },
           });
         if (signUpErr) {
@@ -159,12 +169,15 @@ function SignupContent() {
           return;
         }
       } else {
-        const redirectTo = `${
-          window.location.origin
-        }/signup?redirect=${encodeURIComponent(redirect)}`;
         const { error } = await supabase.auth.signInWithOtp({
           email,
-          options: { emailRedirectTo: redirectTo, shouldCreateUser: true },
+          options: {
+            emailRedirectTo: getAuthCallbackUrl(
+              window.location.origin,
+              redirect
+            ),
+            shouldCreateUser: true,
+          },
         });
         if (error) {
           setStatus(mapAuthError(error.message || "Failed to send magic link"));

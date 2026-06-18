@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import supabase from "@/lib/supabaseClient";
+import { stripSupabaseAuthHash } from "@/lib/authRedirect";
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -12,6 +13,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let isMounted = true;
     (async () => {
+      stripSupabaseAuthHash();
+
       const { data } = await supabase.auth.getSession();
       const session = data.session;
       if (!isMounted) return;
@@ -26,7 +29,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     return () => {
       isMounted = false;
     };
-  }, [pathname]);
+  }, [pathname, router]);
 
   if (!checked) {
     return null;
