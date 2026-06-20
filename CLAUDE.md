@@ -225,7 +225,124 @@ Font files live in `app/fonts/`. **Clash Display** loads from discrete weight fi
 
 ---
 
-## 5. Known issues & roadmap (not yet started)
+## 5. Next focus: chat page preview (neo-brutalist) — in design
+
+**What:** A neo-brutalist "ink on paper" restyle of the chat experience, built the **same way the landing was** — as a **static/scripted preview at its own route**, with the real dark `/chat` left completely untouched. This is the §4-flagged "later phase" (dark↔paper relationship + streaming rebuild), now in the *design/brainstorm* stage. No swap until the user greenlights.
+
+**Playbook (mirror the landing preview):**
+- New components built fresh (likely `app/components/chat-brutal/` or similar — TBD), assembled into a preview page, mounted at a **separate route** (e.g. `/preview/chat` — exact path TBD). `/` and `/chat` stay as-is.
+- **No backend in the preview**: no Supabase, no `/api/chat`, no auth. Pure look-and-feel, scripted/canned data — exactly like the landing Hero's scripted demo.
+- **Reuse the existing brutalist primitives** in `app/components/brutal/`: `Bubble` (already built *as* the canonical chat element — character=left/cream/ink-shadow, user=right/ink-fill/red-shadow), `Button`, `Burst`, `sfx`/`popSfx`.
+- Same palette + system as §3 — **no new colors**. Surfaces use the two paper tones: `--paper` (cream `#F3EFE4`) = canvas/thread; `--paper-raised` (white `#FFFFFF`) = raised cards/panels/bubbles/composer. ("white" always means the `--paper-raised` token, not a new color.) Red stays `--red`, never the legacy dark `--accent`.
+
+**Layout:** three-zone manga "spread" — **sidebar** (kept, see below) · **message thread** (cream canvas, `Bubble`s) · **composer** (white panel, textarea + universe/character picker). Chat is a fixed `h-screen` app shell, not a scrolling page — different constraint from the landing; mobile rule still applies (sidebar becomes a slide-over).
+
+### Sidebar — DECIDED
+The sidebar **stays** (the user wants chat history visible) and keeps its current collapse behavior: a fixed toggle that's always visible, and when the rail collapses to `w-0`, a small **Search + New Chat** control cluster stays floating on the page so you can still act with the rail closed. Brutalist translation:
+- **Two panels read as a manga spread:** thread on cream `--paper`, sidebar a distinct panel, **`3px` ink border** as the gutter/spine between them.
+- **Collapse controls — docked in the header (Option A):** the controls live in the **main header top-bar**, not as a separate floating cluster (a floating cluster read as 4 disconnected squares colliding with the character header). Header = `[toggle]` (always) · when collapsed also `[search][New Chat]` · **thin ink divider** · character avatar+name. Square ink-bordered buttons with the hard lift/press; **New Chat in red** so the primary action stays loud when collapsed. (Search hidden on mobile → ⌘K modal.)
+- **Wordmark** (Clash bold uppercase + red dot, matching landing nav) → **New Chat** = full-width **primary red `Button`** (optional `sfx="go"`) → **search** = sharp `2.5px` ink-bordered input, Space Mono uppercase placeholder.
+- **Section labels** (`Today` / `Last 30 Days`) = Space Mono uppercase tracked eyebrows + thin ink rule (like landing section headers).
+- **Conversation rows = flat rows, NOT cards** (20 bordered+shadowed cards would be too noisy). Hover = subtle `--ghost`/screentone fill; **active chat = `4px` red left-edge bar + ink fill** (where red earns its keep); archive ✕ appears on hover as a small ink square button.
+- **Avatars = square ink-bordered chips** (strict radius `0`; the Hero demo's `rounded-full` chips are a one-off we're not following here).
+- **Modals (search ⌘K / profile): NO blur** — brutalism forbids it. Backdrop = solid ink (~60%) or halftone wash; dialog = hard ink-bordered white panel with offset shadow. Restyling the modals is lower-priority for the first preview pass.
+
+### Sidebar surface tone — CHOSEN: ink (for now, revisit later)
+Decided via an interactive mockup A/B: **ink sidebar (footer-style)** — ink bg + cream text, like the `Footer`. Bolder "black gutter" manga; bridges the dark↔paper tension (hinge to the dark `/chat` we keep); red New Chat + red active-bar detonate on ink. The white-on-cream alternative (sidebar `--paper-raised` on `--paper` thread, `3px` ink gutter — calmer but a *subtle* contrast) stays documented as the fallback. **Still build the surface as a swappable `tone` variant** so we can flip ink↔white later without a rewrite; "for now" = not locked forever.
+- **Ink-tone consequence (important):** on an ink sidebar, ink borders and the ink hard-shadow go invisible, so raised elements (New Chat, search field, user card) must **invert their border + shadow to cream** (`--paper`) to stay legible. The **red** New Chat keeps a cream shadow; the **active conversation** uses a subtle charcoal raise + the **red left-bar** carrying the accent (don't also red-fill it — keep red meaningful). The white tone uses normal ink borders/shadows. Bake both into the `tone` variant.
+
+### Composer — DECIDED (see mockup)
+- **Panel:** sharp `bg-paper-raised`, `3px` ink **top** border (reads as the page's bottom panel), hard `--shadow`. **No** backdrop-blur, **no** orange `--accent` border, **no** rounding — kill all three from the current dark composer.
+- **Pickers:** the two pill triggers → **square ink-bordered chips** with the hard lift/press. **Universe chip = Space Mono uppercase tag** (`🌐 KONOHA ▾`); **character chip = Clash name** (uppercase) — and **fold a small square avatar into the character chip** (avatar + name in one chip) so it shows *who you're talking to* and *is* the changer. (This replaces the earlier idea of a separate standalone avatar box at the composer's left edge — dropped as redundant.)
+- **Picker popovers** open upward: sharp white, `2.5px` ink border, hard offset shadow (offset up-left), no blur/round. The **character popover mirrors the SenseiRail cast cards** (avatar + Clash name + universe + trait) so the in-chat picker and the landing's "Pick your sensei" are visibly one system; the universe popover is a simpler list. Rows reuse the sidebar row treatment (hover `--ghost`, selected = red left-bar + ink fill).
+- **Send:** square **red `Button`** (primary) with Send icon, hard lift/press.
+- **Placeholder is persona-aware:** `Message Naruto…` (uses the selected character — also fixes the §6 empty-state persona gap at least here).
+- **Locked-universe state** (after a convo starts): universe chip goes flat (drops shadow), `--ink-muted`, small lock glyph, same "Start a new chat to change universe" tooltip. Keep the behavior.
+- **SFX (confirmed):** `sfx="send"` → `WHOOSH! / ZIP! / SWISH!` on send; `popSfx("impact", …)` → `DON!! / BAM!` on character-select. Both are §3 curated actions.
+
+### Message thread — DECIDED
+- **Avatars beside bubbles (per §3 Bubble spec):** a **square avatar chip beside each bubble** — character chip on the **left** (ink shadow), user chip on the **right** (red shadow) — so each speaker "reads as a set." Grouping: a **run** = consecutive messages from one speaker → avatar chip on the **first bubble of the run**, timestamp on the **last**. Keep a **character header** at the top of the thread too.
+- **Bubbles** = the existing `Bubble` component (left cream/ink-shadow, right ink-fill/red-shadow).
+- **Markdown convention — the red-italic-action rule:** single `*…*` = in-voice stage action → **italic red** (the product convention; the Hero + persona prompt already do this), `**…**` = bold (General Sans 700 ink). We do NOT render generic gray italics — emphasis *is* the red action. Other md, brutalist: `inline code` = Space Mono on ghost/screentone fill + ink hairline, sharp; code block = ink-bordered panel + hard shadow + screentone, Space Mono; blockquote = thick **red** left-bar + ink text; lists = ink bullets / Space Mono numbers; links = red underlined. (Current renderer is hand-rolled regex via `dangerouslySetInnerHTML` — §6 tech debt; preview keeps it scoped, real-renderer swap is a separate task.)
+- **Typing / streaming indicator (DECIDED — ink square dots):** before the first token, a **character-side bubble** (avatar+bubble set) with **three small ink _square_ dots** marching/pulsing (sharp, not round). Once streaming starts it becomes the real bubble, text filling token-by-token with the Hero's **`▍` block cursor** trailing until `done`; the bubble grows.
+- **Timestamps (DECIDED — last-of-run only):** Space Mono, tiny, uppercase, `--ink-muted` (e.g. `14:32`); shown only on the **last bubble of a run**, not under every line.
+- **Message entrance motion:** snappy/physical per §3 — fast (~150ms) slide-up + faint scale, then settle. No long opacity fades.
+- **No SFX on receiving a reply:** per §3, SFX needs a *user action* behind it — passive events stay silent. SFX stays scoped to send / character-select / shuffle.
+- **Error state:** failed reply = character bubble with a **red border** (§3 error color) + a small ink-bordered **`RETRY`** button. No new color invented.
+- **Hover message actions (DECIDED — minimal this pass):** small **square ink-bordered icon buttons** (hard shadow + lift) revealed on hover (tap-hold on mobile). This pass = **copy** on character bubbles + **retry** on errors only. Regenerate/edit/feedback need real backend — **deferred** (faking dead buttons would muddy the static preview).
+
+### Empty state — DECIDED (persona-forward "your hero is already here")
+The current empty state (`chat-empty-state.tsx`: generic `"How can I help you?"` + Learn/Explore/Curiosity categories + character-agnostic prompts) is the most off-brand screen — a generic assistant in disguise. Full reframe so it embodies §1 ("the persona *is* the product", "learn from your heroes"):
+- **Not** the floating chips-above-the-composer pattern — that's the exact "ChatGPT-with-an-anime-skin" tell §1 forbids. The empty state is **one composed panel filling the thread area** (between header and composer), playing as a sequence.
+- **Sequence on character-select:** (1) **identity** snaps in — big square **avatar** (ink border, hard shadow, speed-lines behind per §3) + character **name in Clash** + Space Mono eyebrow (`KONOHA · NEVER GIVES UP`); (2) an **in-voice greeting** auto-types into a **left `Bubble` paired with the avatar as a set** (same pattern as the thread; reuses the Hero's typer; lightly personalized with the user's name); (3) **after the greeting finishes typing, the prompt tiles reveal** beneath it (pop/stagger) — reads as "the character just spoke, here's what you could ask," not a form.
+- **Prompts = the "learn from your heroes" bet made literal:** the same complex ideas filtered through *this* character's voice (e.g. Naruto: "Explain quantum computing the way you'd explain chakra control" / "Break down compound interest like a training arc" / "Talk me out of giving up"). Framed as **visual-novel-style dialogue choices** — styled like the user/reply side (ink-bordered, right-leaning) so it feels like picking your line back at them.
+- **Categories → the product's 3 actual use cases** (§1 "fun, motivation, or understand complex ideas"): **`EXPLAIN · HYPE ME · JUST TALK`** as Space Mono tags; each swaps the prompt set, all in-voice. (Replaces generic Learn/Explore/Curiosity.)
+- **Anti-staleness (variety by design):** per-character **pools** in `persona_config` — ~5–6 greetings, ~8–10 prompts per mode — **randomly sampled** each new chat (1 greeting + 3 prompts). Plus a **confirmed shuffle / "give me others" re-roll affordance** — a brutalist icon button (e.g. dice/refresh) that re-draws the prompt set, **with an SFX pop on click** (`popSfx("impact", …)` → `DODON!! / BAM!`), so re-rolling feels punchy. Optional **"topic of the day"** slot (echoes the landing's featured-character-of-the-day). Never a fixed static menu.
+- **Composer is always live (prompts are optional, never a gate):** when the user **starts typing**, the prompt tiles **fade/recede** (reappear if the field clears); the first send — typed or a tapped prompt — transitions into the real thread. VN framing offers choices without forcing one.
+- **Data:** greeting + per-mode prompt pools ultimately live in `characters.persona_config` (alongside voice/knowledge_scope); the static preview hardcodes the featured character (Naruto). Must look right with emoji placeholder *or* real portrait.
+- **Mobile:** stacks (identity → greeting bubble → mode tags wrap → prompt tiles full-width). No absolute positioning.
+
+### Preview behavior — DECIDED (semi-interactive)
+Fully **semi-interactive**, not auto-scripted — it's the only version that convinces in a review, and still zero backend.
+- **You type or tap a prompt** → drops a **user bubble** (+ send SFX) → ink-dots → `▍` typing animation → a **canned in-character reply** streams in (reuse the Hero's typer; ~600–900ms dots first; reduced-motion → full reply instantly).
+- **Reply source (the not-fake trick):** **prompt taps → tailored on-topic canned answers** (prompts are fixed, so each is paired with a genuinely on-topic Naruto-voiced reply); **free-typed messages → a sampled in-voice pool** (5–6 replies written to work for anything, sampled so repeats vary).
+- **One featured character (Naruto)** gets full canned content; the picker still works visually for others with lighter content.
+- **Markdown showcase:** at least one canned reply contains a `*action*`, `**bold**`, a list, and inline code so the thread's md styling is visible.
+- **No auto-loop** (the user drives, unlike the Hero); **New Chat** resets to the empty state.
+
+### Wiring to real APIs later — what changes vs. what doesn't
+The preview **freezes the look & feel**; going live is a deliberate integration pass, not a switch-flip.
+- **Carries over unchanged:** all visual components (bubbles, avatars, sidebar, composer/pickers, empty-state, SFX, buttons), layout, palette/type, mobile reflow + `dvh` handling, markdown styling, the typing-indicator *visuals* (ink-dots → `▍`). The streamed-text-into-a-bubble effect looks identical whether text comes from the fake typer or real SSE deltas — only the *source* swaps.
+- **Still needs wiring (real work):** canned pool → real `/api/chat` SSE; Supabase persistence (conversations/messages); auth gate + user id/name; character + `persona_config` (greetings, prompt pools, voice) from DB instead of hardcoded Naruto; sidebar's real conversation list / search / profile.
+- **Good news:** the existing dark `/chat` already contains all that logic (streaming, Supabase CRUD, auth) — wiring is mostly *porting known code onto the new components*.
+- **Flagged integration-phase choice (not decided now):** restyle the existing chat components **in place** (keep wiring, swap JSX/classes — likely less work) vs. **port the wiring into the fresh brutalist components**.
+
+### Mobile pass — DECIDED
+Chat is a fixed app shell, so beyond the §3 "narrow-first / no absolute %" rule:
+- **`100dvh` + flex column from the first commit (confirmed):** the composer must stay glued above the on-screen keyboard — never hidden behind it. (Classic `100vh` mobile-chat trap; built in now, not retrofitted.)
+- **Sidebar → slide-over:** off-canvas by default, slides in from the left as an ink panel with a `3px` ink edge over a **solid ink backdrop (~60%, NO blur)** per §3; tap backdrop/toggle to close. The **collapsed floating controls** (toggle · search · red New Chat) stay pinned top-left so you can act with the rail closed — same as desktop.
+- **Composer reflow:** chips wrap to their own row above the textarea; send stays bottom-right; textarea full-width; tap targets ≥44px.
+- **Picker popovers → near-full-width panel** anchored above the composer on narrow screens (sharp, ink-bordered, no blur) instead of a small dropdown.
+- **Hover actions → tap-and-hold** (long-press) on a bubble (no hover on mobile).
+- **Empty state / thread:** stack per their specs; bubbles a bit wider (~85%), avatars still fit, timestamps tiny.
+
+### Modals (⌘K search + profile) — DECIDED
+One reusable brutalist **Modal** primitive (backdrop + panel + close), two contents:
+- **Backdrop:** solid ink ~60% (or halftone wash) — **no blur**. **Panel:** `--paper-raised`, `3px` ink border, hard offset shadow, sharp; snappy pop entrance (no soft fade). Small **square ink ✕ close button** top-right with the lift.
+- **Search (⌘K):** ink-bordered input + Space Mono uppercase placeholder (`SEARCH OR ENTER FOR NEW CHAT`) + `⌘K` hint badge; `RECENT CHATS` Space Mono label + ink rule; **flat rows reusing the sidebar/picker row treatment** (title + small square avatar + universe tag; hover `--ghost`; selected = red left-bar); empty → `NO CONVERSATIONS FOUND`; keep Enter-on-empty = new chat. Arrow-key nav is a nice-to-have.
+- **Profile:** square ink-bordered avatar, **Clash** name, General Sans email, `FREE PLAN` Space Mono tag; **Sign out = secondary (white) `Button`** (not red — keep red meaningful).
+
+### Auth pages (login / signup) — DECIDED design, timing TBD
+Currently pure old-world (`glass-card`, gradient orbs, `backdrop-blur`, Bricolage `font-display`) — full brutalist redesign needed for a cohesive `landing → auth → chat` flow. They already read as centered modal cards, so structure stays, skin swaps:
+- **Paper canvas + centered hard-bordered white card** (`3px` ink, hard shadow, sharp). Wordmark (`Verse Sensei.` + red dot) → **Clash heading** (`WELCOME BACK`) → Space Mono field labels (`EMAIL`/`PASSWORD`) → sharp ink-bordered inputs.
+- **Primary = red `Button`** full-width (`SIGN IN →`, optional `sfx="go"`); keep the dual password/magic-link behavior. **Google = secondary white `Button`** + icon. `OR CONTINUE WITH` divider = ink rules + Space Mono.
+- Errors = red border + red text; success ("check your email") = `--ok` green (rare allowed use). Keep the backdrop-click-to-go-back behavior but with a **solid ink backdrop (no blur, no glass)**.
+- **Optional persona delight:** a small character speech-bubble welcome (`Naruto: Welcome back — let's go!`) carrying the persona into auth.
+- Fix the §6 **login/signup ~80% duplication** here — extract a shared form component/hook.
+- **⚠️ Timing/scoping — DECIDED:** `/login` + `/signup` are **live routes** reachable from the live old dark landing; the landing swap is on hold for review. Don't paper-ify auth in isolation (jarring mid-flow). **Decision: do NOT build the auth redesign now.** This spec is the durable record — when we do the go-live swap (landing + chat + auth together as one cohesive paper rollout), build the auth pages directly from this section. No further brainstorming needed; just implement what's written here.
+
+### Build plan & status (chat preview)
+Built section by section like the landing, pausing for user review after each step (§7). Lives in `app/components/chat-brutal/`, mounted at **`/preview/chat`**; real dark `/chat` untouched.
+- [x] **1. Shell + route** — ✅ DONE. `app/preview/chat/page.tsx` → `ChatPreview.tsx`: paper-canvas shell, **fixed `h-[100dvh]` + `min-h-0`** flex (overrides `.paper-canvas`'s `min-height:100svh` so the composer stays glued above the mobile keyboard), ink sidebar scaffold via a **swappable `TONE_VARS` map** (`ink`|`paper` → CSS custom props for bg/text/borders/shadows so ink↔white is a one-line flip), `3px` ink gutter, main = header · halftone thread · composer scaffolds. Verified: renders desktop + mobile (375, no h-overflow), `100dvh` fills exactly, `/chat` has no `paper-canvas` (still dark), `tsc` + ESLint clean.
+- [x] **2. Sidebar** — ✅ DONE. `Sidebar.tsx` = the rail only: wordmark, red New Chat (`SB_RAISE` lift), Space Mono search, Today/Last-30 sections (Space Mono eyebrow + ink rule), **flat rows** (hover `--sb-row-hover`, active = `4px` red left-bar + charcoal fill, archive ✕ on hover), square red user-card avatar. Tone via `TONE_VARS` (ink now; on ink, raised borders/shadows invert to cream).
+  - **Collapse controls — REVISED to "docked in header" (Option A):** the original floating toggle+Search+New Chat cluster looked like 4 disconnected squares colliding with the character header. Now the **main header is one clean top-bar**: `[toggle]` (+ `[search][New Chat]` when the rail is collapsed) · **thin ink divider** · character avatar+name. The rail (`w-[260px]`↔`w-0`, `border-r` drops when collapsed) no longer renders any floating controls. Controls still "stay on the page" when collapsed — just docked in the header. Header icon buttons live in `ChatPreview` (`IconBtn`).
+  - **Mobile pass (sidebar/shell) DONE:** rail is a `fixed` left **slide-over** over a **solid-ink (no-blur) backdrop**; header shows `[toggle][New Chat] · character` (search hidden on mobile → ⌘K modal later). Verified desktop (open + collapsed) + mobile (closed + slide-over open) at 375 — no h-overflow, no console errors. (Composer/picker/thread mobile reflow + tap-hold land with those components in Steps 3–4/6.) `tsc`/ESLint clean.
+  - **⚠️ Foundation fix made here:** `globals.css` had **unlayered** `input{}` and `.button,button{}` base rules that beat Tailwind's layered utilities (so `bg-red`/`bg-paper-raised`/`text-ink` silently lost on bare `<button>`/`<input>`). Moved both into **`@layer base`** so utilities win on bare elements (the landing's `Button` only dodged this by rendering as `<a>` when it has `href`). Verified `/login` (dark) still renders correctly after the change — no regression (its Google button now correctly white). **Implication for the rest of chat-brutal:** bare `<button>`/`<input>` can now use normal utility classes; where a value isn't a utility (e.g. tone vars), set it via inline `style`.
+- [~] **3. Thread + composer** — split into 3a/3b for reviewability.
+  - [x] **3a. Thread** — ✅ DONE. `Markdown.tsx` (React renderer, no `dangerouslySetInnerHTML`: `*action*`→italic red, `**bold**`, `` `code` ``→Space Mono on ghost+ink hairline, code block→bordered+shadow+screentone, blockquote→red left-bar, lists→ink markers, links→red underline). `Thread.tsx`: `Bubble`s + square avatars (grouped — avatar on first of run, timestamp Space Mono on last), copy-on-hover (character), red error border + `RETRY`, ink-square typing dots (`brutal-march` keyframe in globals, reduced-motion gated), `▍` streaming cursor. Seeded `SAMPLE_THREAD` (Naruto markdown showcase) in `ChatPreview`. Verified desktop + mobile (375): bubbles wrap ~80%, tails/avatars/markdown/timestamps render, no h-overflow, `tsc`/ESLint clean. (Typing/streaming/error states wired but exercised by the Step 3b/5 send loop.)
+    - **Alignment polish (review):** avatar must **top-align** with the bubble (`items-start`, not `items-end`) so it sits at the tail; meta row needs `mt-2` to clear the bubble's 4px hard shadow; row gap is `gap-5` (20px) so the 14px tail *points at* the avatar with ~6px clearance (not touching, not far).
+  - [x] **3b. Composer** — ✅ DONE. `Composer.tsx` + `cast.ts` (static CAST/UNIVERSES, mirrors SenseiRail). Sharp paper-raised panel, `3px` ink top border (no blur/round/accent). Auto-grow textarea, persona placeholder `Message {name}…`, Enter-to-send / Shift+Enter newline. **Universe chip** = Space Mono tag (globe + name + chevron); **locked state** when a convo has messages (flat, `--ink-muted`, lock glyph, tooltip). **Character chip** = avatar folded in + Clash name. **Popovers open upward** (sharp, ink border, hard shadow, click-away catcher): universe = WORLDS list (selected red left-bar); character = cast cards mirroring SenseiRail (avatar + Clash name + `universe · trait`, selected red bar + ghost). **Red Send** (square, lift) + `send` SFX (WHOOSH) on click; **`impact` SFX (DON)** on character-select. Wired into `ChatPreview`: selected-character state drives header/thread/placeholder; **send loop** = append user bubble → typing dots (750ms) → stream a canned reply (Step 3b placeholder; Step 5 = pools) with the inline `▍` caret. Verified desktop + mobile (375, no h-overflow): both popovers, locked/unlocked universe, send→stream, `tsc`/ESLint clean.
+    - **Streaming caret fix:** mid-stream, render content **inline** (split-on-`*` so half-typed actions still go red, caret stays inline) and switch to block `Markdown` once `streaming` ends — otherwise the caret dropped to a new line below the block element.
+- [ ] **4. Empty state** — persona sequence (identity → typed greeting → VN prompts), EXPLAIN/HYPE ME/JUST TALK modes, shuffle.
+- [ ] **5. Semi-interactive demo** — canned reply pools (prompt-tailored + sampled free-text), Naruto featured.
+- [ ] **6. Modals + mobile polish** — ⌘K search + profile (no-blur), sidebar slide-over, picker bottom-sheet, tap-hold actions.
+
+### Still to brainstorm (open questions)
+- **Sidebar tone** — ink chosen *for now*; revisit white once the whole page is assembled and we can judge ink-sidebar + ink-user-bubbles together at full size.
+
+---
+
+## 6. Known issues & roadmap (not yet started)
 
 Beyond the landing redesign, these are the standing improvement areas (deferred, but documented so they're not lost):
 
@@ -239,7 +356,7 @@ Beyond the landing redesign, these are the standing improvement areas (deferred,
 
 ---
 
-## 6. Working agreements
+## 7. Working agreements
 - **Pause for the user's review after each build step** (the §4 checklist items) — do not roll straight into the next step. Present what changed + how to verify, then wait for go-ahead.
 - Keep this file updated when product direction, the design system, or architecture decisions change.
 - New UI follows §3 strictly. If a need arises that the system doesn't cover, extend the system here first, then build.

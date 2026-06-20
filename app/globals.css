@@ -107,18 +107,23 @@ body::after {
   background: linear-gradient(to left, var(--background), transparent 70%);
 }
 
-/* Panels and inputs */
-.input,
-input {
-  background-color: var(--panel);
-  border-color: color-mix(in oklab, var(--foreground) 15%, transparent);
-  color: var(--foreground);
-}
+/* Panels and inputs — kept in @layer base so Tailwind utility classes can override
+   them on bare <button>/<input> elements (e.g. the neo-brutalist chat UI). Unlayered
+   element rules otherwise beat layered utilities regardless of specificity. The dark
+   app is unaffected: these remain the defaults and its styles use !important / inline. */
+@layer base {
+  .input,
+  input {
+    background-color: var(--panel);
+    border-color: color-mix(in oklab, var(--foreground) 15%, transparent);
+    color: var(--foreground);
+  }
 
-.button,
-button {
-  background-color: color-mix(in oklab, var(--foreground) 10%, transparent);
-  color: var(--foreground);
+  .button,
+  button {
+    background-color: color-mix(in oklab, var(--foreground) 10%, transparent);
+    color: var(--foreground);
+  }
 }
 
 .border-default {
@@ -1427,9 +1432,19 @@ body:has(.paper-canvas)::after {
 .burst-pulse-a { animation: burst-pulse-a 2.4s ease-in-out infinite; transform-origin: center; }
 .burst-pulse-b { animation: burst-pulse-b 3.1s ease-in-out infinite; transform-origin: center; }
 
+/* Typing indicator — marching ink square dots (chat-brutal Thread) */
+@keyframes brutal-march {
+  0%, 100% { opacity: 0.3; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-3px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .burst-pulse-a,
   .burst-pulse-b {
     animation: none !important;
+  }
+  [style*="brutal-march"] {
+    animation: none !important;
+    opacity: 0.6 !important;
   }
 }
