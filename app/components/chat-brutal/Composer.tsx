@@ -16,9 +16,14 @@ interface ComposerProps {
   universe: string;
   character: CastChar;
   isUniverseLocked: boolean;
+  /** Once a conversation has started, the character is locked too (immersion —
+      a chat is with one persona; switch via New Chat). */
+  isCharacterLocked: boolean;
   onSelectCharacter: (c: CastChar) => void;
   onSelectUniverse: (universe: string) => void;
   onSend: (text: string) => void;
+  /** Notifies the parent whether the textarea has a draft (to dim empty-state prompts). */
+  onDraftChange?: (hasText: boolean) => void;
 }
 
 const CHIP_LIFT =
@@ -29,9 +34,11 @@ export function Composer({
   universe,
   character,
   isUniverseLocked,
+  isCharacterLocked,
   onSelectCharacter,
   onSelectUniverse,
   onSend,
+  onDraftChange,
 }: ComposerProps) {
   const [text, setText] = React.useState("");
   const [universeOpen, setUniverseOpen] = React.useState(false);
@@ -52,6 +59,7 @@ export function Composer({
     if (e) popSfxAt("send", e);
     onSend(t);
     setText("");
+    onDraftChange?.(false);
     if (taRef.current) taRef.current.style.height = "auto";
   };
 
@@ -75,7 +83,10 @@ export function Composer({
         <textarea
           ref={taRef}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            setText(e.target.value);
+            onDraftChange?.(e.target.value.trim().length > 0);
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -163,19 +174,31 @@ export function Composer({
             {/* Character chip (avatar folded in) */}
             <div className="relative">
               <button
+                disabled={isCharacterLocked}
                 aria-haspopup="listbox"
                 aria-expanded={charOpen}
+                title={
+                  isCharacterLocked
+                    ? "Start a new chat to talk to someone else"
+                    : undefined
+                }
                 onClick={() => {
+                  if (isCharacterLocked) return;
                   setCharOpen((o) => !o);
                   setUniverseOpen(false);
                 }}
                 className={cn(
-                  "inline-flex cursor-pointer items-center gap-2 rounded-none border-[2.5px] border-ink bg-paper-raised py-1.5 pl-1.5 pr-2.5 text-ink",
-                  CHIP_LIFT
+                  "inline-flex items-center gap-2 rounded-none border-[2.5px] py-1.5 pl-1.5 pr-2.5",
+                  isCharacterLocked
+                    ? "cursor-not-allowed border-ink/40 bg-paper text-ink-muted"
+                    : cn("cursor-pointer border-ink bg-paper-raised text-ink", CHIP_LIFT)
                 )}
               >
                 <span
-                  className="flex h-6 w-6 items-center justify-center border-[2px] border-ink bg-paper font-clash text-[11px] font-bold"
+                  className={cn(
+                    "flex h-6 w-6 items-center justify-center border-[2px] bg-paper font-clash text-[11px] font-bold",
+                    isCharacterLocked ? "border-ink/40 text-ink-muted" : "border-ink"
+                  )}
                   aria-hidden
                 >
                   {character.avatar}
@@ -183,14 +206,16 @@ export function Composer({
                 <span className="font-clash text-[13px] font-bold uppercase tracking-[-0.01em]">
                   {character.name}
                 </span>
-                {charOpen ? (
+                {isCharacterLocked ? (
+                  <Lock className="h-3 w-3" />
+                ) : charOpen ? (
                   <ChevronUp className="h-3.5 w-3.5" />
                 ) : (
                   <ChevronDown className="h-3.5 w-3.5" />
                 )}
               </button>
 
-              {charOpen && (
+              {charOpen && !isCharacterLocked && (
                 <div className="absolute bottom-full left-0 z-50 mb-2 w-[280px] rounded-none border-[2.5px] border-ink bg-paper-raised [box-shadow:var(--shadow)]">
                   <div className="border-b-[2.5px] border-ink px-3 py-2 font-label text-[9px] uppercase tracking-[0.15em] text-ink-muted">
                     Pick your sensei

@@ -7,7 +7,12 @@ import { popSfxAt } from "../brutal/sfx";
 import { Sidebar, type SidebarTone, type Convo } from "./Sidebar";
 import { Thread, type ChatMsg } from "./Thread";
 import { Composer } from "./Composer";
+import { EmptyState } from "./EmptyState";
 import { FEATURED, type CastChar, charsInUniverse } from "./cast";
+import { replyFor } from "./replies";
+import { SearchModal, ProfileModal } from "./Modals";
+
+const USER_NAME = "Rajarshi";
 
 // Neo-brutalist chat PREVIEW (paper canvas). Static/scripted, no backend, no auth.
 // Mounted at /preview/chat; the real dark /chat is untouched. See CLAUDE.md §5.
@@ -108,7 +113,22 @@ export default function ChatPreview() {
   const [messages, setMessages] = React.useState<ChatMsg[]>(SAMPLE_THREAD);
   const [isTyping, setIsTyping] = React.useState(false);
   const [character, setCharacter] = React.useState<CastChar>(FEATURED);
+  const [draft, setDraft] = React.useState(false);
+  const [searchOpen, setSearchOpen] = React.useState(false);
+  const [profileOpen, setProfileOpen] = React.useState(false);
   const timers = React.useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // ⌘K / Ctrl+K opens search.
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen((o) => !o);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   React.useEffect(
     () => () => timers.current.forEach(clearTimeout),
@@ -187,13 +207,17 @@ export default function ChatPreview() {
       { id: `u-${Date.now()}`, role: "user", content: text, ts: new Date() },
     ]);
     setIsTyping(true);
+    const reply = replyFor(character.name, text);
     const t = setTimeout(() => {
       setIsTyping(false);
-      streamReply(
-        "Good question! *grins* Believe it — let's break it down together, dattebayo."
-      );
-    }, 750);
+      streamReply(reply);
+    }, 600 + Math.random() * 300); // 600–900ms of dots first
     timers.current.push(t);
+  };
+
+  const handleSendPrompt = (text: string, e: React.MouseEvent) => {
+    popSfxAt("send", e);
+    handleSend(text);
   };
 
   return (
@@ -215,6 +239,7 @@ export default function ChatPreview() {
         onSelect={handleSelect}
         onNewChat={handleNewChat}
         onArchive={handleArchive}
+        onProfile={() => setProfileOpen(true)}
       />
 
       {/* Main: header · thread · composer */}
@@ -231,10 +256,10 @@ export default function ChatPreview() {
 
           {!isSidebarOpen && (
             <>
-              {/* Search — desktop only for now (mobile uses the ⌘K modal, Step 6) */}
+              {/* Search — opens the ⌘K modal (desktop) */}
               <IconBtn
                 label="Search"
-                onClick={() => setIsSidebarOpen(true)}
+                onClick={() => setSearchOpen(true)}
                 className="hidden lg:inline-flex"
               >
                 <Search className="h-[18px] w-[18px]" />
@@ -283,9 +308,12 @@ export default function ChatPreview() {
               userAvatar="R"
             />
           ) : (
-            <div className="font-label text-[11px] uppercase tracking-[0.15em] text-ink-muted">
-              empty state (new chat) · step 4
-            </div>
+            <EmptyState
+              character={character}
+              userName={USER_NAME}
+              dimmed={draft}
+              onSendPrompt={handleSendPrompt}
+            />
           )}
         </div>
 
@@ -294,11 +322,28 @@ export default function ChatPreview() {
           universe={character.universe}
           character={character}
           isUniverseLocked={isUniverseLocked}
+          isCharacterLocked={isUniverseLocked}
           onSelectCharacter={handleSelectCharacter}
           onSelectUniverse={handleSelectUniverse}
           onSend={handleSend}
+          onDraftChange={setDraft}
         />
       </main>
+
+      <SearchModal
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        conversations={conversations}
+        onSelect={handleSelect}
+        onNewChat={handleNewChat}
+      />
+      <ProfileModal
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        name={USER_NAME}
+        email="rajarshi@versesensei.app"
+        avatar="R"
+      />
     </div>
   );
 }

@@ -53,6 +53,7 @@ interface SidebarProps {
   onSelect: (id: string) => void;
   onNewChat: () => void;
   onArchive: (id: string) => void;
+  onProfile: () => void;
 }
 
 // Raised element inside the rail — border + shadow follow the tone (cream on ink).
@@ -69,6 +70,7 @@ export function Sidebar({
   onSelect,
   onNewChat,
   onArchive,
+  onProfile,
 }: SidebarProps) {
   const [query, setQuery] = React.useState("");
 
@@ -213,6 +215,7 @@ export function Sidebar({
         <button
           title="Profile"
           aria-label="Profile"
+          onClick={onProfile}
           style={{ color: "var(--sb-text)" }}
           className={cn(
             "mt-2 flex w-full cursor-pointer items-center gap-3 bg-transparent px-3 py-2.5 text-left",
